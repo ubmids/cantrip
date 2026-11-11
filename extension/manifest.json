@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Cantrip",
+  "short_name": "Cantrip",
+  "version": "0.1.0",
+  "description": "Teach your browser a rule. Gemini compiles it in the cloud; Gemini Nano runs it on every page, on your device.",
+  "minimum_chrome_version": "139",
+  "action": { "default_title": "Open Cantrip", "default_icon": { "128": "icon-128.png" } },
+  "icons": { "128": "icon-128.png" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["sidePanel", "storage", "contextMenus", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle" }
+  ]
+}
