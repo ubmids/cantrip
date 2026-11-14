@@ -66,15 +66,26 @@ your rule ──► ☁ design: labels, system prompt, 3 examples, 12 tests
 
 ## Run it
 
-You need desktop Chrome 139 or later with
-`chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled.
+You need an up-to-date desktop Chrome. Chrome's Prompt API, which Firebase AI Logic uses for
+on-device inference, is on by default from Chrome 148 for web pages and Chrome 138 for
+extensions. Chrome 157 needs no flag: `await LanguageModel.availability()` in DevTools answers
+`downloadable` on a fresh profile. On Chrome 139 to 147, turn on
+`chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` first.
+
+Chrome downloads Gemini Nano once, the first time you press **Download the model**. For that
+it needs about 22 GB of free disk space on the volume that holds your Chrome profile, and
+either a GPU with more than 4 GB of VRAM or 16 GB of RAM with 4 CPU cores.
+`chrome://on-device-internals` shows the model's status. On-device prompts are limited to
+9,216 tokens.
 
 1. Create a Firebase project. In the console open **AI Services > AI Logic**, choose the
    **Gemini Developer API**, and finish the guided setup.
 2. Register a web app and copy its config into `.env` (start from `.env.example`).
-3. App Check: for the hosted web app register **reCAPTCHA Enterprise** and set
+3. App Check: Firebase AI Logic refuses calls without it (enforced for every project since
+   2 November 2026). For the hosted web app register **reCAPTCHA Enterprise** and set
    `VITE_RECAPTCHA_ENTERPRISE_KEY`. For local dev and the extension, create a debug token
    under **App Check > Apps > Manage debug tokens** and set `VITE_APPCHECK_DEBUG_TOKEN`.
+   Never build the hosted site with the debug token set, and never commit it.
 4. Turn on **Authentication > Anonymous** and create a **Firestore** database, then deploy
    the rules: `firebase deploy --only firestore:rules`.
 5. Optional: in **Remote Config** set `compiler_model` (default `gemini-3.8-flash`) and
@@ -101,8 +112,11 @@ no DOM rewriting). Select any text and choose **Check with Cantrip** from the co
 
 - Gemini Nano runs on desktop Chrome only. Without it, compiling is disabled rather than
   quietly running in the cloud.
-- Inputs are clipped to 3,000 characters to stay inside the on-device token limit.
-- Compiling needs network; running does not.
+- Inputs are clipped to 3,000 characters to stay inside the on-device token limit (9,216 tokens
+  in Chrome, 4,096 on iPhone).
+- Compiling needs network. Running does not.
+- The extension uses an App Check debug token, because reCAPTCHA cannot load inside an
+  extension page. That is fine for judging and not for a store release.
 
 ## License
 
