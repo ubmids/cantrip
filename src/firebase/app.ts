@@ -1,19 +1,18 @@
 /**
  * Firebase setup shared by the web app and the Chrome extension.
  *
- * App Check is required by Firebase AI Logic. The web app uses reCAPTCHA
- * Enterprise when a site key is configured; local development and the
+ * App Check is required by Firebase AI Logic. The hosted web app uses reCAPTCHA
+ * (v3, or Enterprise if that is the key configured). Local development and the
  * extension use an App Check debug token registered in the Firebase console.
  */
 import { initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
-import { CustomProvider, initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
+import { CustomProvider, initializeAppCheck, ReCaptchaEnterpriseProvider, ReCaptchaV3Provider } from "firebase/app-check";
 import { fetchAndActivate, getRemoteConfig, getValue } from "firebase/remote-config";
 import { DEFAULT_COMPILER_MODEL } from "./ai";
+import { chooseAppCheck, type AppCheckEnv } from "./appcheck";
 
-export interface CantripEnv {
+export interface CantripEnv extends AppCheckEnv {
   firebase: FirebaseOptions | null;
-  recaptchaKey?: string;
-  appCheckDebugToken?: string;
 }
 
 export function readEnv(): CantripEnv {
@@ -31,24 +30,28 @@ export function readEnv(): CantripEnv {
       : null;
   return {
     firebase,
-    recaptchaKey: e.VITE_RECAPTCHA_ENTERPRISE_KEY || undefined,
+    recaptchaV3Key: e.VITE_RECAPTCHA_V3_KEY || undefined,
+    recaptchaEnterpriseKey: e.VITE_RECAPTCHA_ENTERPRISE_KEY || undefined,
     appCheckDebugToken: e.VITE_APPCHECK_DEBUG_TOKEN || undefined,
   };
 }
 
-export function startFirebase(env: CantripEnv): FirebaseApp {
+export function startFirebase(env: CantripEnv, host: "web" | "extension" = "web"): FirebaseApp {
   if (!env.firebase) throw new Error("Firebase is not configured. Copy .env.example to .env and fill it in.");
   const app = initializeApp(env.firebase);
   if (env.appCheckDebugToken) {
     (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string }).FIREBASE_APPCHECK_DEBUG_TOKEN = env.appCheckDebugToken;
   }
-  if (env.recaptchaKey || env.appCheckDebugToken) {
+  const choice = chooseAppCheck(env, host);
+  if (choice.kind !== "none") {
     initializeAppCheck(app, {
-      // A debug token always wins. Without a site key (the extension, local dev)
-      // use a provider that loads no remote script, which extension pages forbid.
-      provider: env.recaptchaKey
-        ? new ReCaptchaEnterpriseProvider(env.recaptchaKey)
-        : new CustomProvider({ getToken: () => Promise.reject(new Error("Register an App Check debug token for this build.")) }),
+      provider:
+        choice.kind === "recaptcha-v3"
+          ? new ReCaptchaV3Provider(choice.siteKey)
+          : choice.kind === "recaptcha-enterprise"
+            ? new ReCaptchaEnterpriseProvider(choice.siteKey)
+            : // Debug token only: a provider that loads no remote script, which extension pages forbid.
+              new CustomProvider({ getToken: () => Promise.reject(new Error("Register an App Check debug token for this build.")) }),
       isTokenAutoRefreshEnabled: true,
     });
   }
