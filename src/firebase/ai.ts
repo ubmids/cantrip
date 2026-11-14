@@ -21,7 +21,7 @@ import { withFallback } from "../core/fallback";
 import { parseJsonLoose } from "../core/json";
 import type { JsonModel, JsonResult, JsonSchema, Source } from "../core/types";
 
-export const DEFAULT_COMPILER_MODEL = "gemini-3.8-flash";
+export const DEFAULT_COMPILER_MODEL = "gemini-3.6-flash";
 export const DEFAULT_FALLBACK_MODEL = "gemini-3.5-flash-lite";
 /** How long the compiler waits for the first cloud model before trying the lighter one. */
 export const CLOUD_TIMEOUT_MS = 45_000;
@@ -90,7 +90,7 @@ export function createModels(app: FirebaseApp, opts: ModelOptions = {}): Models 
         },
       }),
     );
-  // The free tier of the stronger model is sometimes overloaded: it hangs for a minute, then
+  // A free tier model is sometimes overloaded (gemini-3.8-flash was on 14 Nov 2026): it hangs for a minute, then
   // fails. The compiler then falls back to the lighter model rather than leaving the person stuck.
   const cloud: JsonModel =
     compilerModel === DEFAULT_FALLBACK_MODEL

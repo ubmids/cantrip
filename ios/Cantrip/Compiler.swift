@@ -12,7 +12,7 @@ import FirebaseAILogic
 /// way on both devices; the cloud then tunes it for this model.
 @MainActor
 final class Models: ObservableObject {
-    static let compilerModel = "gemini-3.8-flash"
+    static let compilerModel = "gemini-3.6-flash"
     let ai = FirebaseAI.firebaseAI(backend: .googleAI())
 
     var deviceAvailable: Bool { FirebaseAI.SystemLanguageModel.default.isAvailable }
