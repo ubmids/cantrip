@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addCorrection, compileIntent, recompile, splitTests, type CompileEvent } from "../src/core/compiler";
-import { devicePrompt } from "../src/core/prompts";
+import { designPrompt, devicePrompt } from "../src/core/prompts";
 import { locateEvidence, matchLabel, runProgram } from "../src/core/run";
 import { counterIds, FakeDevice, ScriptedCloud } from "./fakes";
 
@@ -186,6 +186,16 @@ describe("recompile", () => {
   it("refuses a correction with a label the cantrip doesn't have", () => {
     const c = { spec: { labels: ["fine", "bad"] }, tests: [] } as never;
     expect(() => addCorrection(c, "x", "maybe")).toThrow(/not one of/);
+  });
+});
+
+describe("designPrompt", () => {
+  it("asks for a program that stays calm on page fragments, and for tests that prove it", () => {
+    // Found on a real job page: a paragraph of duties with no word about pay was flagged as unpaid.
+    const p = designPrompt(intent, "gemini-nano");
+    expect(p).toMatch(/fragment/i);
+    expect(p).toMatch(/at least 2 of the tests/);
+    expect(p).toMatch(/Missing information is not a signal/);
   });
 });
 
