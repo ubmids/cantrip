@@ -146,6 +146,7 @@ textarea:focus, input:focus { border-color: var(--cloud); box-shadow: 0 0 0 3px 
 
 .verdict-banner { margin-top: 16px; background: var(--device-soft); border-radius: 12px; padding: 14px; display: flex; gap: 14px; align-items: center; justify-content: space-between; }
 .verdict-banner p { margin: 0; }
+.verdict-banner .btn { flex: none; white-space: nowrap; }
 
 .program { margin: 4px 0 6px; border-top: 1px solid var(--line); padding-top: 10px; }
 .program summary { cursor: pointer; font-weight: 550; font-size: 14px; }
