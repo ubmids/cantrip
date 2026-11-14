@@ -113,6 +113,20 @@ describe("compileIntent", () => {
     expect(cloud.prompts).toHaveLength(1);
   });
 
+  it("keeps the best program when the cloud fails in the middle of the repair loop", async () => {
+    // Only the design is scripted, so the first repair call throws, as a network failure would.
+    const { events, onEvent } = collect();
+    const c = await compileIntent(intent, { cloud: new ScriptedCloud([design]), device: new FakeDevice(), target: "gemini-nano", makeId: counterIds(), onEvent });
+    const compiled = c.programs["gemini-nano"]!;
+    expect(compiled.rounds).toHaveLength(1);
+    expect(compiled.program.systemPrompt).toBe(design.systemPrompt);
+    expect(compiled.tuneAccuracy).toBe(compiled.rounds[0].accuracy);
+    expect(compiled.cloudCalls).toBe(1);
+    expect(compiled.holdoutResults.length).toBeGreaterThan(0);
+    expect(events.some((e) => e.type === "repair-failed")).toBe(true);
+    expect(events.at(-1)?.type).toBe("done");
+  });
+
   it("rejects a design without a warning label", async () => {
     const cloud = new ScriptedCloud([{ ...design, flagLabels: ["nonsense"] }]);
     await expect(compileIntent(intent, { cloud, device: new FakeDevice(), target: "gemini-nano" })).rejects.toThrow(/warn/);
