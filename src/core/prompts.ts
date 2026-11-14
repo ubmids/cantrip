@@ -109,7 +109,7 @@ export const repairSchema: JsonSchema = {
 const RULES_FOR_SMALL_MODELS = `The program runs on a small on-device model with limited reasoning. Write for it:
 - Open with one sentence that states the job.
 - Then give a short numbered checklist of concrete signals to look for, with the label each signal points to.
-- Say what to do when signals conflict or none are present.
+- Say what to do when signals conflict or none are present. Missing information is not a signal: text that simply does not mention the subject gets the calm label.
 - Use plain words. No nuance-heavy language, no long paragraphs.
 - Keep the system prompt under 180 words.
 - Examples must be realistic, varied, and short (under 80 words each). The evidence field is an exact quote from the example input, at most 12 words.`;
@@ -126,6 +126,8 @@ Produce:
 4. systemPrompt: the instructions for the small model.
 5. examples: 3 worked examples covering different labels.
 6. tests: 12 realistic test texts with the expected label and why. Spread them across all labels. At least 4 must be hard: near-misses, sarcasm, mixed signals, or texts that use the right keywords but should not be flagged. None may repeat an example.
+
+The program reads real pages one block at a time, so it often gets a fragment: a single paragraph or list item cut from a longer post, with no sign of what the rule is about. A fragment that does not itself show the thing to warn about must get the calm label. Say so in the systemPrompt, and make at least 2 of the tests such fragments (for example a list of duties or a company blurb) with the calm label expected.
 
 ${RULES_FOR_SMALL_MODELS}
 

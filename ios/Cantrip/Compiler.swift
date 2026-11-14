@@ -79,7 +79,7 @@ enum Prompts {
     The program runs on a small on-device model with limited reasoning. Write for it:
     - Open with one sentence that states the job.
     - Then give a short numbered checklist of concrete signals to look for, with the label each signal points to.
-    - Say what to do when signals conflict or none are present.
+    - Say what to do when signals conflict or none are present. Missing information is not a signal: text that simply does not mention the subject gets the calm label.
     - Use plain words. No nuance-heavy language, no long paragraphs.
     - Keep the system prompt under 180 words.
     - Examples must be realistic, varied, and short (under 80 words each). The evidence field is an exact quote from the example input, at most 12 words.
