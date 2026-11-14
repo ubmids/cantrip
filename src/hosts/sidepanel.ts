@@ -34,7 +34,7 @@ async function boot() {
   const env = readEnv();
   if (!env.firebase) {
     const { simulatedHost } = await import("./simulated");
-    mountApp(root, { ...simulatedHost(), ...store, kind: "extension", simulated: false, ready: false, setupProblem: "This build has no Firebase project yet. See the README to connect one." });
+    mountApp(root, { ...simulatedHost(), ...store, kind: "extension", simulated: false, ready: false, deviceState, setupProblem: "This build has no Firebase project yet. See the README to connect one." });
     return;
   }
   const app = startFirebase(env);
