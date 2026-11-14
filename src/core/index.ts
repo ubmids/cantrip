@@ -4,3 +4,4 @@ export * from "./run";
 export * from "./prompts";
 export * from "./segment";
 export { parseJsonLoose } from "./json";
+export * from "./fallback";

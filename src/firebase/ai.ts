@@ -17,11 +17,14 @@ import {
   type AI,
   type GenerativeModel,
 } from "firebase/ai";
+import { withFallback } from "../core/fallback";
 import { parseJsonLoose } from "../core/json";
 import type { JsonModel, JsonResult, JsonSchema, Source } from "../core/types";
 
 export const DEFAULT_COMPILER_MODEL = "gemini-3.8-flash";
 export const DEFAULT_FALLBACK_MODEL = "gemini-3.5-flash-lite";
+/** How long the compiler waits for the first cloud model before trying the lighter one. */
+export const CLOUD_TIMEOUT_MS = 45_000;
 
 const ON_DEVICE_IO = {
   expectedInputs: [{ type: "text" as const, languages: ["en"] }],
@@ -73,19 +76,29 @@ export function createModels(app: FirebaseApp, opts: ModelOptions = {}): Models 
   const ai = getAI(app, { backend: new GoogleAIBackend() });
   const compilerModel = opts.compilerModel || DEFAULT_COMPILER_MODEL;
 
-  const cloud = new FirebaseJsonModel((schema) =>
-    getGenerativeModel(ai, {
-      mode: InferenceMode.ONLY_IN_CLOUD,
-      inCloudParams: {
-        model: compilerModel,
-        generationConfig: {
-          temperature: 0.4,
-          responseMimeType: "application/json",
-          responseSchema: schema as never,
+  const cloudModel = (model: string) =>
+    new FirebaseJsonModel((schema) =>
+      getGenerativeModel(ai, {
+        mode: InferenceMode.ONLY_IN_CLOUD,
+        inCloudParams: {
+          model,
+          generationConfig: {
+            temperature: 0.4,
+            responseMimeType: "application/json",
+            responseSchema: schema as never,
+          },
         },
-      },
-    }),
-  );
+      }),
+    );
+  // The free tier of the stronger model is sometimes overloaded: it hangs for a minute, then
+  // fails. The compiler then falls back to the lighter model rather than leaving the person stuck.
+  const cloud: JsonModel =
+    compilerModel === DEFAULT_FALLBACK_MODEL
+      ? cloudModel(compilerModel)
+      : withFallback(cloudModel(compilerModel), cloudModel(DEFAULT_FALLBACK_MODEL), {
+          timeoutMs: CLOUD_TIMEOUT_MS,
+          onFallback: (e) => console.warn(`Cantrip: ${compilerModel} failed (${e.message}). Using ${DEFAULT_FALLBACK_MODEL}.`),
+        });
 
   const device = new FirebaseJsonModel((schema) =>
     getGenerativeModel(ai, {
