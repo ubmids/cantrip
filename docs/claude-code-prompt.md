@@ -4,7 +4,7 @@ Paste everything below the line into Claude Code on your Mac, from the folder wh
 
 You're helping me finish my entry for Google's #BuildHybridAI hackathon on Devpost (https://firebasehybridaihackathon.devpost.com). The entry is **Cantrip**, in my repo `ubmids/cantrip`. You type a rule in plain English. Gemini in the cloud compiles it into a small program for the on-device model, runs tests on the device, repairs what fails and reports a score on held-out tests. Then the program runs free and offline on every page (Gemini Nano in Chrome) and on iPhone (Apple's Foundation Model). Every model call goes through Firebase AI Logic.
 
-What exists: a web app, a Chrome MV3 extension and the compiler in TypeScript (19 passing tests), plus an iPhone app in `ios/Cantrip/` that has **never been compiled** (it was written without Xcode). Nobody has run any of it against a real Firebase project or a real on-device model, or looked at the screens. Your job is to make all of it really work, make it look finished, and get the submission ready. Submissions close **Mon Nov 30, 2026, 2:00 PM PT**.
+What exists: a web app, a Chrome MV3 extension and the compiler in TypeScript (19 passing tests), plus an iPhone app in `ios/Cantrip/`. Open PR #3 (`ios-xcode-project`) adds an Xcode project generated with xcodegen that builds for the Simulator, but the app has never run on a phone. Nobody has run any of it against a real Firebase project or a real on-device model, or looked at the screens. Your job is to make all of it really work, make it look finished, and get the submission ready. Submissions close **Mon Nov 30, 2026, 2:00 PM PT**.
 
 ## Ground rules
 
@@ -19,7 +19,8 @@ What exists: a web app, a Chrome MV3 extension and the compiler in TypeScript (1
 
 1. Clone `git@github.com:ubmids/cantrip.git`, or pull `main` if I already have it.
 2. Run `npm ci && npm test && npm run typecheck && npm run build:all`. Everything should pass. If not, fix it and show me what changed.
-3. Read `README.md`, `ios/README.md`, `src/firebase/*.ts`, `src/core/*.ts` and `docs/submission.md` so you know the design before you touch it.
+3. List the open PRs on `ubmids/cantrip` and tell me what each is. PR #3 is the Xcode project; ask me whether to merge it before step 5.
+4. Read `README.md`, `ios/README.md`, `src/firebase/*.ts`, `src/core/*.ts` and `docs/submission.md` so you know the design before you touch it.
 
 ## 2. Firebase project (in Chrome, Firebase console)
 
@@ -66,8 +67,8 @@ What exists: a web app, a Chrome MV3 extension and the compiler in TypeScript (1
 ## 5. iPhone app (Xcode)
 
 1. Ask me which Apple team and bundle id to use (suggested `com.<my team>.cantrip`). If my free personal team can't do what's needed, tell me before anything that costs money.
-2. Create the Xcode project inside `ios/` as a SwiftUI app named Cantrip, with the files in `ios/Cantrip/`.
-3. Add `firebase-ios-sdk` through Swift Package Manager: FirebaseAILogic, FirebaseFirestore, FirebaseAppCheck, FirebaseCore. Use the current version that supports `FirebaseAI.SystemLanguageModel` (Apple Foundation Models through AI Logic). Check the docs, because the Swift API names in `Compiler.swift` were written from the docs without a compiler.
+2. Use the Xcode project from PR #3 (`ios/project.yml` and `ios/Cantrip.xcodeproj`; regenerate it with `xcodegen` after changing `project.yml`). Set the signing team and bundle id there.
+3. Check that the Firebase package version supports `FirebaseAI.SystemLanguageModel` (Apple Foundation Models through AI Logic). The Swift API names in `Compiler.swift` were written from the docs, and the Simulator build only shows that they compile, not that they work on a device.
 4. Register an **iOS app** in the same Firebase project and add `GoogleService-Info.plist` to the project. Add it to `.gitignore`.
 5. Build, then fix compile errors until it builds clean. Run it on my iPhone, which needs Apple Intelligence on. Register the App Check debug token that it prints in the Xcode console.
 6. Test end to end:
@@ -77,7 +78,7 @@ What exists: a web app, a Chrome MV3 extension and the compiler in TypeScript (1
    - Run a check.
 
    Confirm the check says it ran on the iPhone. Record the scores like in step 4.
-7. Commit the Xcode project, and update `ios/README.md` with the real build steps.
+7. Commit any project changes, and update `ios/README.md` with the real build steps.
 
 ## 6. Hosted web app
 
