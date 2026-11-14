@@ -45,11 +45,46 @@ All twelve example texts in the app (three per sample) were run with **Run on de
 
 ## Learning from a correction
 
-- On the scam cantrip, the parcel email verdict was corrected to "urgent scam". The correction became a test and the recompile started at once.
-- The recompile scored 7/9, then 8/9 after one repair. The next cloud call then failed with a network error ("Failed to fetch") and the whole recompile was thrown away, although it already held a better program. That is a bug, fixed on this branch.
+- On the scam cantrip, the parcel email verdict was corrected to "urgent scam". The correction became a test (13 tests, 1 from a correction) and the recompile started at once.
+- First attempt: 7/9, then 8/9 after one repair. The next cloud call failed with a network error ("Failed to fetch") and the whole recompile was thrown away, although it already held a better program. That was a bug, now fixed.
+- Second attempt, after the fix: the program it already had passed 9/9 including the corrected email, so no repair was needed. 0 cloud calls, 13 device runs, 27.2 seconds, 3/4 unseen.
+
+## Gemini Nano is not deterministic
+
+The same program and the same parcel email gave three different labels on three runs: "suspicious alert", "urgent scam" and "normal email". Chrome's Prompt API offers no sampling control to web pages in this version, so a borderline text can flip between runs. Scores above are single runs and can move by a test either way.
+
+## Real job pages
+
+The extension could not be loaded by automation (Chrome's extensions page needs a person), so this part was checked by running the page splitter on real pages and feeding real blocks to the compiled program in the web app.
+
+- Splitting, sample pages in `demo/`: `demo/jobs.html` gave 8 blocks, one per job card. `demo/inbox.html` gave 5 blocks, one per email.
+- Splitting, a public job board's listing page: 40 blocks (the cap). The cards there are 120 to 210 characters of title, company and tags, with no pay details, so a pay rule has little to judge on a listing page.
+- Splitting, one public job post on the same board (4,605 characters): 15 blocks. The post is longer than a block may be, so it is read paragraph by paragraph, and the sidebar's other listings are read too.
+- Running real paragraphs from that post through the commission-only program:
+  - The paragraph that says the role is fully commission based was flagged "commission only". Correct.
+  - A paragraph of duties with no word about pay was flagged "unpaid job". Wrong. This is a real weakness: the program was tested on whole posts and met a fragment.
+- Fix: the compiler now tells Gemini that pages arrive one block at a time, that missing information is not a signal, and asks for at least two fragment tests.
+- After the fix, recompiled (9/9 first draft, 3/3 unseen, 1 cloud call, 12 device runs, 45.2 seconds), each paragraph run twice:
+  - commission paragraph: "commission only" both times. Correct.
+  - duties paragraph: "standard pay" both times. Fixed.
+  - a skills paragraph: "standard pay" both times. Correct.
+  - a company blurb that says reps can "earn up to 90K": "commission only" both times. Debatable, since the blurb does not say how pay works.
+- The first run after a page load took 21.5 seconds while Chrome loaded the model. Later runs took 2 to 4 seconds.
+
+## Sharing
+
+- Sharing from `localhost` published a code, and opening the hosted site with that code installed the cantrip there with its scores, ready to run.
+- With the fix, a share shows its code even when the clipboard does not answer, and pressing Share again keeps the same code.
+- Three test shares are in Firestore from these runs. One of them is an orphan from the stall bug.
 
 ## Problems the real runs showed
 
 1. Share did nothing visible when the clipboard stalled, and a second press published a second code. Fixed, with tests.
 2. A cloud failure in the middle of the repair loop discarded the best program so far. Fixed, with a test.
-3. Small things in the interface: "1 cloud calls", a "Try it" button that wrapped onto two lines, and a recompile round titled "Repair 0". Fixed.
+3. Programs flagged page fragments that carried no information. The compiler now asks for fragment tests. Fixed for the case seen, with a test on the prompt.
+4. Small things in the interface: "1 cloud calls", a "Try it" button that wrapped onto two lines, and a recompile round titled "Repair 0". Fixed.
+
+## Not run yet
+
+- The Chrome extension itself, in a real browser: side panel, Read this page, badges and highlights, the right-click check, install by code.
+- The iPhone app on a phone.
