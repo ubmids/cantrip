@@ -14,9 +14,9 @@ Built for [#BuildHybridAI](https://firebasehybridaihackathon.devpost.com/) with 
 
 Draft. The video is not recorded yet.
 
-- **Hosted app:** https://sixth-trainer-388221.web.app. It loads, shows what your browser
-  needs, and installs shared cantrips by code. Compiling on it comes on once its App Check
-  key is registered.
+- **Hosted app:** https://sixth-trainer-388221.web.app. In a Chrome with Gemini Nano you can
+  compile and run cantrips there. In any other browser it loads, says what is missing, and
+  can still install a shared cantrip by code.
 - **Video:** to come.
 - **What you need for the web app and the extension:** an up-to-date desktop Chrome (148 or
   later, no flags), about 22 GB of free disk space, and 16 GB of memory or a GPU with more
@@ -102,9 +102,12 @@ either a GPU with more than 4 GB of VRAM or 16 GB of RAM with 4 CPU cores.
 2. Register a web app and copy its config into `.env` (start from `.env.example`).
 3. App Check: Firebase AI Logic refuses calls without it (enforced for every project since
    2 November 2026).
-   - Hosted web app: create a **reCAPTCHA v3** key for your domain, register the web app with
-     it under **App Check > Apps**, and set `VITE_RECAPTCHA_V3_KEY` to the site key. A
-     reCAPTCHA Enterprise key in `VITE_RECAPTCHA_ENTERPRISE_KEY` works too.
+   - Hosted web app: create a score based reCAPTCHA key for your domain in the same Google
+     Cloud project, register the web app with it under **App Check > Apps > Fraud Defense**
+     (the new name for reCAPTCHA Enterprise), and set `VITE_RECAPTCHA_ENTERPRISE_KEY` to the
+     site key. Firebase has switched off its older reCAPTCHA v3 provider for new
+     registrations. `VITE_RECAPTCHA_V3_KEY` is still read, for projects registered before that.
+     App Check can refuse calls for a minute or two after registering.
    - Local dev and the extension: create a debug token under
      **App Check > Apps > Manage debug tokens** and set `VITE_APPCHECK_DEBUG_TOKEN`.
    - Build the hosted site with the debug token empty, and never commit it:
