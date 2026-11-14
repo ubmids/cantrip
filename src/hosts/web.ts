@@ -45,6 +45,7 @@ async function boot() {
       ...localStore,
       simulated: false,
       ready: false,
+      deviceState,
       setupProblem: "This build has no Firebase project yet. See the README to connect one.",
     });
     return;

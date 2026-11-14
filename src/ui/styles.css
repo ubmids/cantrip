@@ -159,6 +159,8 @@ textarea:focus, input:focus { border-color: var(--cloud); box-shadow: 0 0 0 3px 
 blockquote { margin: 0; padding: 10px 12px; border-left: 3px solid var(--line); color: var(--muted); font-size: 14px; }
 mark { background: var(--mark); color: var(--ink); padding: 0 2px; border-radius: 3px; }
 .src { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.result > .row.between { flex-wrap: wrap; row-gap: 8px; }
+.label.big { white-space: nowrap; }
 .correct { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 
 .back { background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; margin-bottom: 8px; }

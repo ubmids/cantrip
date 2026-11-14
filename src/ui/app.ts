@@ -45,6 +45,7 @@ interface State {
   tryError: string | null;
   tryBusy: boolean;
   importCode: string;
+  confirmDelete: boolean;
   toast: string | null;
   page: PageScan | null;
 }
@@ -65,6 +66,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     tryError: null,
     tryBusy: false,
     importCode: new URLSearchParams(location.search).get("c") ?? "",
+    confirmDelete: false,
     toast: null,
     page: null,
   };
@@ -239,6 +241,7 @@ export function mountApp(root: HTMLElement, host: Host) {
 
   function openCantrip(id: string | null) {
     s.openId = id;
+    s.confirmDelete = false;
     s.tryResult = null;
     s.tryError = null;
     const c = id ? s.cantrips.find((x) => x.id === id) : null;
@@ -313,6 +316,7 @@ export function mountApp(root: HTMLElement, host: Host) {
   async function remove(c: Cantrip) {
     s.cantrips = s.cantrips.filter((x) => x.id !== c.id);
     s.openId = null;
+    s.confirmDelete = false;
     await persist();
     draw();
   }
@@ -361,8 +365,9 @@ export function mountApp(root: HTMLElement, host: Host) {
       </div>`;
     return html`<div class="notice">
       <p>
-        Programs run on Gemini Nano inside Chrome. Use desktop Chrome 139 or later and turn on
-        <code>chrome://flags/#prompt-api-for-gemini-nano-multimodal-input</code>, then restart Chrome.
+        Programs run on Gemini Nano inside desktop Chrome, and this browser doesn't offer it. Use an up-to-date
+        desktop Chrome (148 or later) on a computer with about 22 GB of free disk space and 16 GB of memory.
+        <code>chrome://on-device-internals</code> shows what Chrome is missing.
       </p>
     </div>`;
   };
@@ -631,7 +636,10 @@ export function mountApp(root: HTMLElement, host: Host) {
         <span class="muted small">${c.tests.length} tests${userTests ? `, ${userTests} from your corrections` : ""}</span>
         <span class="row">
           ${host.share ? html`<button class="btn ghost small" @click=${() => share(c)}>${c.shareCode ? `Shared · ${c.shareCode}` : "Share"}</button>` : nothing}
-          <button class="btn ghost small danger" @click=${() => remove(c)}>Delete</button>
+          ${s.confirmDelete
+            ? html`<button class="btn ghost small" @click=${() => ((s.confirmDelete = false), draw())}>Keep</button>
+                <button class="btn small danger" @click=${() => remove(c)}>Delete for good</button>`
+            : html`<button class="btn ghost small danger" @click=${() => ((s.confirmDelete = true), draw())}>Delete</button>`}
         </span>
       </div>
     </section>`;
@@ -649,7 +657,7 @@ export function mountApp(root: HTMLElement, host: Host) {
               <span class="small ${c.enabled ? "device" : "muted"}">${c.enabled ? "on" : "off"}</span>
             </span>
             <span class="small muted">${c.spec.description || c.spec.intent}</span>
-            <span class="small">${p ? html`<span class="device">▣ ${pct(p.holdoutAccuracy ?? p.tuneAccuracy)} on unseen tests</span>` : html`<span class="muted">Needs compiling for this device</span>`}</span>
+            <span class="small">${p ? html`<span class="device">▣ ${p.holdoutAccuracy == null ? `${pct(p.tuneAccuracy)} on its tests` : `${pct(p.holdoutAccuracy)} on unseen tests`}</span>` : html`<span class="muted">Needs compiling for this device</span>`}</span>
           </button>
         </li>`;
       })}
