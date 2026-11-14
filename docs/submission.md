@@ -31,7 +31,7 @@ Every model call goes through Firebase AI Logic.
 - **Cloud compiler:** `getGenerativeModel` with `InferenceMode.ONLY_IN_CLOUD` and a JSON `responseSchema`. It only ever sees your rule and synthetic test texts.
 - **Device runtime:** `InferenceMode.ONLY_ON_DEVICE` with `responseConstraint` for structured answers, and `initializeDeviceModel()` for the one-time download. It fails closed, so page text is never silently sent to the cloud.
 - **Where it ran:** every verdict shows `response.inferenceSource`, so you can see the split.
-- **iPhone:** the Firebase AI Logic iOS SDK with `FirebaseAI.SystemLanguageModel.default`. Each check gets a fresh session, and `rawResponse.modelVersion` confirms the answer came from the phone.
+- **iPhone:** the Firebase AI Logic iOS SDK (12.x) with `FirebaseAI.SystemLanguageModel.default`. Each check gets a fresh session, and `rawResponse.modelVersion` confirms the answer came from the phone.
 - **Firebase around it:**
   - App Check
   - anonymous Auth
@@ -46,7 +46,9 @@ Every model call goes through Firebase AI Logic.
 
 The compiler loop is plain TypeScript, with tests for the split, the repair loop, keeping the best version, holdout isolation, porting and learning from corrections.
 
-[[One honest sentence on when it was built: started Nov 11, the day the contest opened, and finished during the submission period.]]
+### What was built when
+
+Cantrip is a new project, started on 11 November 2026, the day the contest opened. The repository's first two commits (the compiler, the web app, the Chrome extension and the first iPhone sources) were pushed at 7:56 AM PT that day, about five and a half hours before the submission period opened at 1:30 PM PT. No older code or other pre-existing work is in it. Built during the submission period: the Xcode project for the iPhone app, a web polish pass (honest device status, narrow layout, current Chrome requirements), [[and, once they have really happened: the Firebase project, the first real runs on Gemini Nano and on an iPhone, the fixes those runs forced, the hosted site]]. An AI coding assistant was used throughout.
 
 ## Challenges we ran into
 
