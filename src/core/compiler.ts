@@ -22,6 +22,7 @@ export type CompileEvent =
   | { type: "round-end"; round: Round; best: number }
   | { type: "repairing"; round: number; failures: number }
   | { type: "repaired"; round: number; diagnosis: string }
+  | { type: "repair-failed"; round: number; error: string }
   | { type: "porting"; from: Target }
   | { type: "holdout-start"; count: number }
   | { type: "holdout-result"; result: TestResult }
@@ -195,9 +196,17 @@ async function tune(
     const failures = results.filter((r) => !r.ok).length;
     onEvent?.({ type: "repairing", round: n, failures });
     // Repair from the best program so far, so one bad rewrite can't drag the loop backwards.
-    const res = await cloud.generateJson(repairPrompt(spec, best.program, tests, best.results, target), repairSchema);
-    counters.cloud += 1;
-    const fixed = parseRepair(res.data, spec, tests, best.program);
+    let fixed: ReturnType<typeof parseRepair>;
+    try {
+      const res = await cloud.generateJson(repairPrompt(spec, best.program, tests, best.results, target), repairSchema);
+      counters.cloud += 1;
+      fixed = parseRepair(res.data, spec, tests, best.program);
+    } catch (err) {
+      // The cloud is out of reach or overloaded. The best program so far already runs on the
+      // device, so keep it and finish, rather than throwing the whole compile away.
+      onEvent?.({ type: "repair-failed", round: n, error: String((err as Error)?.message ?? err) });
+      break;
+    }
     onEvent?.({ type: "repaired", round: n, diagnosis: fixed.diagnosis });
     program = fixed.program;
   }

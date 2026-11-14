@@ -146,6 +146,11 @@ export function mountApp(root: HTMLElement, host: Host) {
         if (r) r.diagnosis = e.diagnosis;
         break;
       }
+      case "repair-failed": {
+        const r = v.rounds.at(-1);
+        if (r) r.diagnosis = "Gemini could not be reached for another repair, so Cantrip kept the best program so far.";
+        break;
+      }
       case "holdout-start":
         v.phase = "holdout";
         v.holdoutTotal = e.count;
@@ -451,7 +456,7 @@ export function mountApp(root: HTMLElement, host: Host) {
   };
 
   const roundTitle = (r: LiveRound) =>
-    r.kind === "design" ? "First draft" : r.kind === "port" ? "Ported draft" : `Repair ${r.n - 1}`;
+    r.kind === "design" ? "First draft" : r.kind === "port" ? "Ported draft" : r.n === 1 ? "Current program" : `Repair ${r.n - 1}`;
 
   const compileTheatre = (v: CompileView) => {
     const best = v.rounds.filter((r) => r.done).reduce((m, r) => Math.max(m, r.results.filter((x) => x.ok).length / (r.results.length || 1)), 0);
