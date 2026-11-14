@@ -10,6 +10,23 @@ no cost, works offline, and the text never leaves your machine.
 
 Built for [#BuildHybridAI](https://firebasehybridaihackathon.devpost.com/) with Firebase AI Logic.
 
+## Try it
+
+Draft. The hosted site is not live yet and the video is not recorded yet.
+
+- **Hosted app:** not live yet. It will be at `https://sixth-trainer-388221.web.app`.
+- **Video:** to come.
+- **What you need for the web app and the extension:** an up-to-date desktop Chrome (148 or
+  later, no flags), about 22 GB of free disk space, and 16 GB of memory or a GPU with more
+  than 4 GB of VRAM. Chrome downloads Gemini Nano the first time you press
+  **Download the model**. Without the on-device model the site still loads and says what is
+  missing. It never quietly runs your text in the cloud.
+- **What you need for the iPhone app:** an iPhone with Apple Intelligence turned on (iOS 26
+  or later) and Xcode 26.2 or later. See `ios/README.md`.
+- **From source:** `npm install`, copy `.env.example` to `.env` and fill it in as described
+  under [Run it](#run-it), then `npm run dev` for the web app or `npm run build:extension`
+  and load `dist/extension` at `chrome://extensions` with Developer mode on.
+
 ## Why this is hybrid, and why it has to be
 
 Most hybrid apps use the cloud as a fallback for when the device can't cope. Cantrip
@@ -82,10 +99,15 @@ either a GPU with more than 4 GB of VRAM or 16 GB of RAM with 4 CPU cores.
    **Gemini Developer API**, and finish the guided setup.
 2. Register a web app and copy its config into `.env` (start from `.env.example`).
 3. App Check: Firebase AI Logic refuses calls without it (enforced for every project since
-   2 November 2026). For the hosted web app register **reCAPTCHA Enterprise** and set
-   `VITE_RECAPTCHA_ENTERPRISE_KEY`. For local dev and the extension, create a debug token
-   under **App Check > Apps > Manage debug tokens** and set `VITE_APPCHECK_DEBUG_TOKEN`.
-   Never build the hosted site with the debug token set, and never commit it.
+   2 November 2026).
+   - Hosted web app: create a **reCAPTCHA v3** key for your domain, register the web app with
+     it under **App Check > Apps**, and set `VITE_RECAPTCHA_V3_KEY` to the site key. A
+     reCAPTCHA Enterprise key in `VITE_RECAPTCHA_ENTERPRISE_KEY` works too.
+   - Local dev and the extension: create a debug token under
+     **App Check > Apps > Manage debug tokens** and set `VITE_APPCHECK_DEBUG_TOKEN`.
+   - Build the hosted site with the debug token empty, and never commit it:
+     `VITE_APPCHECK_DEBUG_TOKEN= npm run build`, then check that
+     `grep -r "$YOUR_TOKEN" dist/web` finds nothing.
 4. Turn on **Authentication > Anonymous** and create a **Firestore** database, then deploy
    the rules: `firebase deploy --only firestore:rules`.
 5. Optional: in **Remote Config** set `compiler_model` (default `gemini-3.6-flash`) and
@@ -99,7 +121,7 @@ npm run build:extension  # then load dist/extension at chrome://extensions (Deve
 npm run preview:simulated  # the interface with simulated models, for design work only
 ```
 
-Deploy the web app with `npm run build && firebase deploy --only hosting`.
+Deploy the web app with `VITE_APPCHECK_DEBUG_TOKEN= npm run build && firebase deploy --only hosting`.
 
 ## The Chrome extension
 
