@@ -12,9 +12,11 @@ Built for [#BuildHybridAI](https://firebasehybridaihackathon.devpost.com/) with 
 
 ## Try it
 
-Draft. The hosted site is not live yet and the video is not recorded yet.
+Draft. The video is not recorded yet.
 
-- **Hosted app:** not live yet. It will be at `https://sixth-trainer-388221.web.app`.
+- **Hosted app:** https://sixth-trainer-388221.web.app. It loads, shows what your browser
+  needs, and installs shared cantrips by code. Compiling on it comes on once its App Check
+  key is registered.
 - **Video:** to come.
 - **What you need for the web app and the extension:** an up-to-date desktop Chrome (148 or
   later, no flags), about 22 GB of free disk space, and 16 GB of memory or a GPU with more
