@@ -48,7 +48,7 @@ The compiler loop is plain TypeScript, with tests for the split, the repair loop
 
 ### What was built when
 
-Cantrip is a new project, started on 11 November 2026, the day the contest opened. The repository's first two commits (the compiler, the web app, the Chrome extension and the first iPhone sources) were pushed at 7:56 AM PT that day, about five and a half hours before the submission period opened at 1:30 PM PT. No older code or other pre-existing work is in it. Built during the submission period: the Xcode project for the iPhone app, a web polish pass (honest device status, narrow layout, current Chrome requirements), [[and, once they have really happened: the Firebase project, the first real runs on Gemini Nano and on an iPhone, the fixes those runs forced, the hosted site]]. An AI coding assistant was used throughout.
+Cantrip is a new project, started on 11 November 2026, the day the contest opened. The repository's first two commits (the compiler, the web app, the Chrome extension and the first iPhone sources) were pushed at 7:56 AM PT that day, about five and a half hours before the submission period opened at 1:30 PM PT. No older code or other pre-existing work is in it. Built during the submission period: the Xcode project for the iPhone app, a web polish pass (honest device status, narrow layout, current Chrome requirements), the Firebase project, the hosted site, the first real compiles on Gemini Nano on 14 November, and the fixes those runs forced (a fallback when the compiler model is overloaded, keeping the best program when the cloud drops mid repair, programs that stay calm on page fragments, and a sharing fix). [[Add the iPhone run here once it has really happened.]]. An AI coding assistant was used throughout.
 
 ## Challenges we ran into
 
@@ -56,12 +56,18 @@ Cantrip is a new project, started on 11 November 2026, the day the contest opene
 - Gemini Nano has a tight token window and no multi-turn tools. So every check is a single self-contained prompt, clipped to 3,000 characters.
 - Apple's model keeps session history, which would leak one check into the next. So each check opens a new session.
 - Splitting a real web page into checkable pieces (a job card, an email, a review) without a parser for each site.
-- [[Real problems hit while running it on real devices, one line each.]]
+- The first compiler model we chose never answered on the free tier, so compiles hung for a minute. The compiler now falls back to a lighter model after 45 seconds, and the model is set in Remote Config.
+- A network drop in the middle of the repair loop threw away a better program the loop already held. Now the best program so far is kept and the compile finishes.
+- On a real job post, a paragraph of duties with no word about pay was flagged as unpaid. Programs had only been tested on whole posts. The compiler now asks Gemini for fragment tests, and the false flag went away on the same real paragraphs.
+- Gemini Nano is not deterministic. One borderline email got three different labels on three runs, so a score can move by a test between runs.
+- Firebase has switched off its reCAPTCHA v3 provider for App Check, so the hosted site uses reCAPTCHA Enterprise.
+- [[Real problems from the iPhone run, once it has happened.]]
 
 ## Accomplishments we're proud of
 
 - The hybrid split is the product, not a fallback: the cloud compiles, the device runs.
-- On the commission-only rule, the compiler went from [[first-round score]] to [[final score]] on Gemini Nano in [[N]] rounds. It scored [[holdout score]] on tests the repairs never saw, using [[cloud calls]] cloud calls.
+- On the commission-only rule, the compiler went from 8 of 9 to 9 of 9 on Gemini Nano in 2 rounds. It scored 3 of 3 on tests the repairs never saw, using 2 cloud calls and 21 runs on the device, in 85 seconds. The harder rules took all 4 rounds: the pressure-to-pay email rule went 5 of 8, 7 of 8, 7 of 8, 8 of 8 and then scored 3 of 4 on unseen tests, and the paid-review rule went 7, 7, 7, 8 of 8 and scored 4 of 4. The data-selling rule passed 9 of 9 on the first draft. Every one of the 105 test runs reported that it ran on the device.
+- Running a compiled program made no network request at all, on localhost and on the hosted site. A check takes about 2 to 4 seconds on an M2 Pro laptop.
 - On iPhone, the same cantrip went from [[score]] to [[score]] after porting to Apple's model. [[Use only real numbers.]]
 - One rule, two on-device models: the same cantrip runs on Gemini Nano in Chrome and on Apple's model on iPhone.
 
@@ -81,7 +87,7 @@ Firebase AI Logic, Gemini, Gemini Nano, Apple Foundation Models, Firebase App Ch
 
 ## Links
 
-- Hosted app: [[URL]]
+- Hosted app: https://sixth-trainer-388221.web.app
 - Video: [[YouTube URL]]
 - Code: https://github.com/ubmids/cantrip
 
