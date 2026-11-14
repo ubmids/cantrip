@@ -88,7 +88,7 @@ either a GPU with more than 4 GB of VRAM or 16 GB of RAM with 4 CPU cores.
    Never build the hosted site with the debug token set, and never commit it.
 4. Turn on **Authentication > Anonymous** and create a **Firestore** database, then deploy
    the rules: `firebase deploy --only firestore:rules`.
-5. Optional: in **Remote Config** set `compiler_model` (default `gemini-3.8-flash`) and
+5. Optional: in **Remote Config** set `compiler_model` (default `gemini-3.6-flash`) and
    `max_rounds` (default 4).
 
 ```bash
