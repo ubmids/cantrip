@@ -2,6 +2,7 @@ import "../ui/styles.css";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { createModels, deviceState } from "../firebase/ai";
 import { loadTuning, readEnv, startFirebase } from "../firebase/app";
+import { appCheckProblem } from "../firebase/appcheck";
 import { fetchShared, publishCantrip } from "../firebase/share";
 import type { Cantrip } from "../core/types";
 import { mountApp } from "../ui/app";
@@ -51,7 +52,7 @@ async function boot() {
     return;
   }
 
-  const app = startFirebase(env);
+  const app = startFirebase(env, "web");
   const tuning = await loadTuning(app);
   const models = createModels(app, { compilerModel: tuning.compilerModel });
   const uid = async () => (getAuth(app).currentUser ?? (await signInAnonymously(getAuth(app))).user).uid;
@@ -60,6 +61,7 @@ async function boot() {
     kind: "web",
     target: "gemini-nano",
     ready: true,
+    setupProblem: appCheckProblem(env, "web"),
     cloud: models.cloud,
     device: models.device,
     maxRounds: tuning.maxRounds,

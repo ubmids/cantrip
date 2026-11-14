@@ -6,6 +6,7 @@ import type { Cantrip } from "../core/types";
 import type { ScanReply, ToPage, ToPanel } from "../extension/protocol";
 import { createModels, deviceState } from "../firebase/ai";
 import { loadTuning, readEnv, startFirebase } from "../firebase/app";
+import { appCheckProblem } from "../firebase/appcheck";
 import { fetchShared, publishCantrip } from "../firebase/share";
 import { mountApp } from "../ui/app";
 import type { Host, PageBlockResult, PageScan } from "../ui/host";
@@ -37,7 +38,7 @@ async function boot() {
     mountApp(root, { ...simulatedHost(), ...store, kind: "extension", simulated: false, ready: false, deviceState, setupProblem: "This build has no Firebase project yet. See the README to connect one." });
     return;
   }
-  const app = startFirebase(env);
+  const app = startFirebase(env, "extension");
   const tuning = await loadTuning(app);
   const models = createModels(app, { compilerModel: tuning.compilerModel });
   const uid = async () => (getAuth(app).currentUser ?? (await signInAnonymously(getAuth(app))).user).uid;
@@ -48,6 +49,7 @@ async function boot() {
     kind: "extension",
     target: "gemini-nano",
     ready: true,
+    setupProblem: appCheckProblem(env, "extension"),
     cloud: models.cloud,
     device: models.device,
     maxRounds: tuning.maxRounds,
