@@ -6,16 +6,17 @@ Gemini Nano to Apple's on-device Foundation Model, runs every test on the phone 
 Firebase AI Logic, repairs what fails and reports the unseen-test score. Checks then run on
 the phone with nothing sent.
 
-Not built yet: this was written without Xcode, so expect a few compile fixes on first build.
+It builds: `xcodebuild` for the iOS Simulator succeeds with Xcode 27.1 and firebase-ios-sdk 12.13+.
+It has not run on a phone yet, because that needs the Firebase steps below.
 
 ## Build
 
 1. Xcode 26 or later, an iPhone with Apple Intelligence turned on (iOS 26+).
-2. New iOS App project named Cantrip (SwiftUI). Replace its sources with the files in `Cantrip/`.
-3. File > Add Package Dependencies: `https://github.com/firebase/firebase-ios-sdk`, version
-   12.13.0 or later. Add **FirebaseAILogic**, **FirebaseFirestore** and **FirebaseAppCheck**.
-4. In the Firebase console add an iOS app with your bundle id and drop `GoogleService-Info.plist`
-   into the project.
+2. `cd ios && xcodegen` (brew install xcodegen) makes `Cantrip.xcodeproj` from `project.yml`,
+   with FirebaseAILogic, FirebaseFirestore and FirebaseAppCheck already added. Open it.
+3. In the Firebase console add an iOS app with bundle id `net.subomi.cantrip` and drag its
+   `GoogleService-Info.plist` into the Cantrip group in Xcode. The app does not start without it.
+4. Pick your team under Signing & Capabilities, then run on the iPhone.
 5. Run once, copy the App Check debug token from the Xcode console, and add it under
    **App Check > Apps > Manage debug tokens**.
 

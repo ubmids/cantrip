@@ -1,0 +1,39 @@
+# The Xcode project is generated from this file:  cd ios && xcodegen
+# Then drag GoogleService-Info.plist from the Firebase console into the Cantrip group in Xcode
+# (ios/README.md step 4). It is not in the repo, and the app does not start without it.
+name: Cantrip
+options:
+  bundleIdPrefix: net.subomi
+  deploymentTarget:
+    iOS: "26.0"
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: 12.13.0
+targets:
+  Cantrip:
+    type: application
+    platform: iOS
+    sources:
+      - path: Cantrip
+    dependencies:
+      - package: Firebase
+        product: FirebaseAILogic
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseAppCheck
+      - package: Firebase
+        product: FirebaseCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.subomi.cantrip
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Cantrip
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
