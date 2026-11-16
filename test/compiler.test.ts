@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addCorrection, compileIntent, recompile, splitTests, type CompileEvent } from "../src/core/compiler";
-import { devicePrompt } from "../src/core/prompts";
+import { designPrompt, devicePrompt } from "../src/core/prompts";
 import { locateEvidence, matchLabel, runProgram } from "../src/core/run";
 import { counterIds, FakeDevice, ScriptedCloud } from "./fakes";
 
@@ -113,6 +113,20 @@ describe("compileIntent", () => {
     expect(cloud.prompts).toHaveLength(1);
   });
 
+  it("keeps the best program when the cloud fails in the middle of the repair loop", async () => {
+    // Only the design is scripted, so the first repair call throws, as a network failure would.
+    const { events, onEvent } = collect();
+    const c = await compileIntent(intent, { cloud: new ScriptedCloud([design]), device: new FakeDevice(), target: "gemini-nano", makeId: counterIds(), onEvent });
+    const compiled = c.programs["gemini-nano"]!;
+    expect(compiled.rounds).toHaveLength(1);
+    expect(compiled.program.systemPrompt).toBe(design.systemPrompt);
+    expect(compiled.tuneAccuracy).toBe(compiled.rounds[0].accuracy);
+    expect(compiled.cloudCalls).toBe(1);
+    expect(compiled.holdoutResults.length).toBeGreaterThan(0);
+    expect(events.some((e) => e.type === "repair-failed")).toBe(true);
+    expect(events.at(-1)?.type).toBe("done");
+  });
+
   it("rejects a design without a warning label", async () => {
     const cloud = new ScriptedCloud([{ ...design, flagLabels: ["nonsense"] }]);
     await expect(compileIntent(intent, { cloud, device: new FakeDevice(), target: "gemini-nano" })).rejects.toThrow(/warn/);
@@ -172,6 +186,16 @@ describe("recompile", () => {
   it("refuses a correction with a label the cantrip doesn't have", () => {
     const c = { spec: { labels: ["fine", "bad"] }, tests: [] } as never;
     expect(() => addCorrection(c, "x", "maybe")).toThrow(/not one of/);
+  });
+});
+
+describe("designPrompt", () => {
+  it("asks for a program that stays calm on page fragments, and for tests that prove it", () => {
+    // Found on a real job page: a paragraph of duties with no word about pay was flagged as unpaid.
+    const p = designPrompt(intent, "gemini-nano");
+    expect(p).toMatch(/fragment/i);
+    expect(p).toMatch(/at least 2 of the tests/);
+    expect(p).toMatch(/Missing information is not a signal/);
   });
 });
 

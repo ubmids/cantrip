@@ -135,6 +135,10 @@ Open the side panel from the toolbar. Compile a cantrip, switch it on, and press
 flagged ones get a badge with the deciding words highlighted (CSS Custom Highlight API,
 no DOM rewriting). Select any text and choose **Check with Cantrip** from the context menu.
 
+`demo/jobs.html` and `demo/inbox.html` are sample pages with made-up job posts and emails, for
+trying **Read this page** without depending on a live site. With `npm run dev` running they
+are at `http://localhost:5173/demo/jobs.html` and `http://localhost:5173/demo/inbox.html`.
+
 ## Limits
 
 - Gemini Nano runs on desktop Chrome only. Without it, compiling is disabled rather than
