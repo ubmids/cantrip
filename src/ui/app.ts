@@ -5,6 +5,7 @@ import { runProgram } from "../core/run";
 import type { Cantrip, CompiledProgram, Program, Round, Spec, TestCase, TestResult, Verdict } from "../core/types";
 import type { DeviceState } from "../firebase/ai";
 import type { Host, PageScan } from "./host";
+import { copyWithoutBlocking } from "./clipboard";
 import { SAMPLES } from "./samples";
 
 interface LiveRound {
@@ -143,6 +144,11 @@ export function mountApp(root: HTMLElement, host: Host) {
         v.cloudCalls += 1;
         const r = v.rounds.at(-1);
         if (r) r.diagnosis = e.diagnosis;
+        break;
+      }
+      case "repair-failed": {
+        const r = v.rounds.at(-1);
+        if (r) r.diagnosis = "Gemini could not be reached for another repair, so Cantrip kept the best program so far.";
         break;
       }
       case "holdout-start":
@@ -284,9 +290,11 @@ export function mountApp(root: HTMLElement, host: Host) {
       const next = { ...c, shareCode: code };
       s.cantrips = s.cantrips.map((x) => (x.id === c.id ? next : x));
       await persist();
+      // Show the code straight away: the clipboard can stall, and a second press must reuse this code.
+      draw();
       const link = `${location.origin}${location.pathname}?c=${code}`;
-      await navigator.clipboard?.writeText(host.kind === "web" ? link : code).catch(() => {});
-      toast(`Shared as ${code}. Copied ${host.kind === "web" ? "the link" : "the code"}.`);
+      const copied = await copyWithoutBlocking(() => navigator.clipboard?.writeText(host.kind === "web" ? link : code));
+      toast(copied ? `Shared as ${code}. Copied ${host.kind === "web" ? "the link" : "the code"}.` : `Shared as ${code}.`);
     } catch (err) {
       toast(`Couldn't share: ${(err as Error).message}`);
     }
@@ -448,7 +456,7 @@ export function mountApp(root: HTMLElement, host: Host) {
   };
 
   const roundTitle = (r: LiveRound) =>
-    r.kind === "design" ? "First draft" : r.kind === "port" ? "Ported draft" : `Repair ${r.n - 1}`;
+    r.kind === "design" ? "First draft" : r.kind === "port" ? "Ported draft" : r.n === 1 ? "Current program" : `Repair ${r.n - 1}`;
 
   const compileTheatre = (v: CompileView) => {
     const best = v.rounds.filter((r) => r.done).reduce((m, r) => Math.max(m, r.results.filter((x) => x.ok).length / (r.results.length || 1)), 0);
@@ -467,7 +475,7 @@ export function mountApp(root: HTMLElement, host: Host) {
           </div>`
         : nothing}
       <div class="meters">
-        <div class="meter cloud"><b>${v.cloudCalls}</b><span>cloud calls to compile</span></div>
+        <div class="meter cloud"><b>${v.cloudCalls}</b><span>cloud ${v.cloudCalls === 1 ? "call" : "calls"} to compile</span></div>
         <div class="meter device"><b>${v.deviceRuns}</b><span>test runs on your device</span></div>
         <div class="meter"><b>${pct(best || null)}</b><span>best so far</span></div>
       </div>
@@ -528,7 +536,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     )}
     <p class="muted small">
       ${p.rounds.length} round${p.rounds.length === 1 ? "" : "s"} on the device:
-      ${p.rounds.map((r) => pct(r.accuracy)).join(" → ")}. ${p.cloudCalls} cloud calls, ${p.deviceCalls} device runs.
+      ${p.rounds.map((r) => pct(r.accuracy)).join(" → ")}. ${p.cloudCalls} cloud ${p.cloudCalls === 1 ? "call" : "calls"}, ${p.deviceCalls} device runs.
     </p>
   </details>`;
 
