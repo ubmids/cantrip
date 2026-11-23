@@ -37,6 +37,26 @@ Deadline: Mon 30 Nov 2026, 2:00 PM PT (11:00 PM Lagos).
 - Testing instructions: the "How to test it" list (without the video line), plus "No credentials are needed."
 - Licence URL: https://github.com/ubmids/cantrip/blob/main/LICENSE (GitHub detects Apache 2.0)
 
+## Changed on 24 Nov: paste these into the draft
+
+The hosted app now opens on a Job-scam shield and five sample job posts, and browsers without Gemini Nano can run it for real, in the cloud, through Firebase AI Logic's hybrid mode. Four parts of the draft are now out of date. Nothing on Devpost was touched.
+
+1. **Project details > About the project:** paste `docs/submission.md` again, from "Inspiration" to "What's next", plus "How to test it", the same way as before. What changed: a new paragraph in "What it does" (the shield and the cloud fallback), a "Hybrid fallback, kept narrow" bullet and a longer Remote Config line in "How we built it", and a rewritten "How to test it".
+2. **Additional info > Testing instructions:** replace with this:
+
+   > - **One click, any computer:** open https://sixth-trainer-388221.web.app and press **Check these 5 posts**. The Job-scam shield checks five sample job posts. Without Gemini Nano the checks run on Gemini in the cloud through Firebase AI Logic's hybrid mode, and each result says so (15 per browser session). **Paste your own post** checks any text.
+   > - **The full loop, with Gemini Nano:** desktop Chrome 148 or later (about 22 GB of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM). Press **Download the model** once, pick **Commission-only jobs** under "Your own rule", press **Compile**, then **Try it** on the examples. A compile takes about 1 to 3 minutes, and every check then runs on your device.
+   > - **See a compile without Gemini Nano:** https://sixth-trainer-388221.web.app/?preview is the compile interface with scripted answers. It says so on every screen, and no model runs in it.
+   > - **Code without any keys:** `npm install && npm test` runs the compiler loop, the page splitter and the page badges against fake models.
+   >
+   > No credentials are needed.
+
+3. **Additional info > Main technology requirement:** add this sentence to the end of what is there:
+
+   > Ready programs can also run with `InferenceMode.PREFER_ON_DEVICE`: Gemini Nano when Chrome has it, and `gemini-3.5-flash-lite` in the cloud when it doesn't. That is only for text the person picks or pastes in the web app, it is announced before the run, capped at 15 per browser session, and every verdict shows `inferenceSource`. Compiling and the extension's page reading stay `ONLY_ON_DEVICE`.
+
+4. **Image gallery (optional, recommended):** add `docs/gallery/6-hosted-job-board-cloud-fallback.png` as the second image, captioned: "The hosted app on a computer without Gemini Nano: the Job-scam shield checked five sample posts in the cloud through Firebase AI Logic's hybrid mode, and every result says so. A real run, 24 Nov." It is a real screenshot of the hosted site, not the simulated walkthrough. Consider using it as the thumbnail, because it shows a person's problem rather than a diagram.
+
 ## Left for you
 
 1. **Country of residence** (Additional info). Not in the docs, so left blank. Check it is an eligible country under the rules.
