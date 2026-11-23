@@ -400,7 +400,7 @@ export function mountApp(root: HTMLElement, host: Host) {
   </header>`;
 
   const banners = () => html`${host.simulated
-      ? html`<div class="banner">
+      ? html`<div class="banner sim" role="note">
           <b>Simulated walkthrough.</b> No AI model runs here: the cloud and device answers are scripted, to show the
           interface only, and only the commission-only sample is scripted. Real results need Gemini Nano in desktop Chrome.
           ${host.kind === "web" && new URLSearchParams(location.search).has("preview")
@@ -461,6 +461,17 @@ export function mountApp(root: HTMLElement, host: Host) {
   };
 
   const phaseLine = (v: CompileView) => {
+    if (host.simulated && v.phase !== "error") {
+      const sim: Record<Exclude<CompileView["phase"], "error">, string> = {
+        designing: "Simulated: a scripted program and tests, no Gemini call…",
+        porting: "Simulated: a scripted port, no Gemini call…",
+        testing: "Simulated: running the scripted tests, no model…",
+        repairing: "Simulated: a scripted repair, no Gemini call…",
+        holdout: "Simulated: scripted unseen tests, no model…",
+        done: "Simulated: compiled with scripted answers.",
+      };
+      return html`<span class="muted">${sim[v.phase]}</span>`;
+    }
     const lines: Record<CompileView["phase"], TemplateResult> = {
       designing: html`<span class="cloud">☁ Gemini is writing the program and its tests…</span>`,
       porting: html`<span class="cloud">☁ Gemini is adapting the program for ${TARGET_NAMES[host.target]}…</span>`,
@@ -493,8 +504,8 @@ export function mountApp(root: HTMLElement, host: Host) {
           </div>`
         : nothing}
       <div class="meters">
-        <div class="meter cloud"><b>${v.cloudCalls}</b><span>cloud ${v.cloudCalls === 1 ? "call" : "calls"} to compile</span></div>
-        <div class="meter device"><b>${v.deviceRuns}</b><span>test runs on your device</span></div>
+        <div class="meter cloud"><b>${v.cloudCalls}</b><span>${host.simulated ? "scripted " : ""}cloud ${v.cloudCalls === 1 ? "call" : "calls"}${host.simulated ? "" : " to compile"}</span></div>
+        <div class="meter device"><b>${v.deviceRuns}</b><span>${host.simulated ? "scripted device runs" : "test runs on your device"}</span></div>
         <div class="meter"><b>${pct(best || null)}</b><span>best so far</span></div>
       </div>
       <p class="phase">${v.phase === "done" ? nothing : html`<i class="spinner"></i>`}${phaseLine(v)}</p>
@@ -520,11 +531,13 @@ export function mountApp(root: HTMLElement, host: Host) {
       </ol>
       ${v.phase === "done" && compiled
         ? html`<div class="verdict-banner">
-            <p>
-              <b>Ready.</b> Passed ${pct(compiled.tuneAccuracy)} of its tuning tests and
-              ${compiled.holdoutAccuracy == null ? "had no unseen tests" : html`${pct(compiled.holdoutAccuracy)} of tests it never trained on`}.
-              From now on every run happens on your device: no cloud call, no cost, works offline.
-            </p>
+            ${host.simulated
+              ? html`<p><b>Simulated.</b> These scores are scripted and no model ran. A real compile would run every test on your device.</p>`
+              : html`<p>
+                  <b>Ready.</b> Passed ${pct(compiled.tuneAccuracy)} of its tuning tests and
+                  ${compiled.holdoutAccuracy == null ? "had no unseen tests" : html`${pct(compiled.holdoutAccuracy)} of tests it never trained on`}.
+                  From now on every run happens on your device: no cloud call, no cost, works offline.
+                </p>`}
             <button class="btn primary" @click=${() => closeCompile(true)}>Try it</button>
           </div>`
         : nothing}
@@ -713,7 +726,9 @@ export function mountApp(root: HTMLElement, host: Host) {
           ${s.compile ? compileTheatre(s.compile) : c ? detail(c) : html`${composer()} ${pagePanel()} ${library()}`}
         </main>
         <footer class="small muted">
-          Compiled in the cloud by Gemini, run on your device, all through Firebase AI Logic.
+          ${host.simulated
+            ? "Simulated walkthrough: no model runs on this page."
+            : "Compiled in the cloud by Gemini, run on your device, all through Firebase AI Logic."}
         </footer>
         ${s.toast ? html`<div class="toast" role="status">${s.toast}</div>` : nothing}
       </div>`,

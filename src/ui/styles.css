@@ -76,6 +76,8 @@ main { display: grid; gap: 16px; }
 
 .banner { background: var(--cloud-soft); color: var(--ink); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; margin-bottom: 14px; }
 .banner.warn { background: var(--flag-soft); }
+/* The simulated walkthrough's label stays in view while the page scrolls. */
+.banner.sim { position: sticky; top: 8px; z-index: 5; box-shadow: var(--shadow); }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
 .extension .card { padding: 16px; border-radius: 14px; }

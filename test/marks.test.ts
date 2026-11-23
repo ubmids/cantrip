@@ -42,6 +42,27 @@ describe("markBlock", () => {
     expect(texts.some((t) => t.includes("on device"))).toBe(false);
   });
 
+  it("reads a badged block exactly as it read before the badge, even when the page repeats the badge's words", () => {
+    // jsdom has no innerText. A browser's puts breaks between block elements, which textContent does not.
+    const blocks = new Set(["H3", "P", "LI", "UL"]);
+    const rendered = (n: Node): string =>
+      n.nodeType === Node.TEXT_NODE
+        ? (n.textContent ?? "")
+        : ((inner) => (blocks.has((n as Element).tagName) ? `\n${inner}\n` : inner))(Array.from(n.childNodes).map(rendered).join(""));
+    Object.defineProperty(HTMLElement.prototype, "innerText", { configurable: true, get() { return rendered(this); } });
+    try {
+      page();
+      document.querySelector(`[${ATTR}="b1"] h3`)!.append(" ⚑ commission onlyon device");
+      const before = findBlocks(document.body).map((b) => b.text);
+      expect(before[0]).toMatch(/^Sales rep ⚑ commission onlyon device be your own boss/);
+      markBlock(document, "b1", "Jobs", "commission only", "r", null);
+      markBlock(document, "b1", "Pay", "unpaid", "r", null);
+      expect(findBlocks(document.body).map((b) => b.text)).toEqual(before);
+    } finally {
+      delete (HTMLElement.prototype as { innerText?: string }).innerText;
+    }
+  });
+
   it("ignores a block that has gone from the page", () => {
     page();
     expect(() => markBlock(document, "b9", "Jobs", "commission only", "r", null)).not.toThrow();
