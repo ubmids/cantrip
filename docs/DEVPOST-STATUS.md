@@ -1,6 +1,6 @@
 # Devpost draft status
 
-Checked 23 Nov 2026. The project is a **draft** on #BuildHybridAI 2026. Nothing has been submitted.
+Checked 23 Nov 2026, updated 24 Nov. The project is a **draft** on #BuildHybridAI 2026. Nothing has been submitted.
 
 - Draft (edit): https://devpost.com/submit-to/31808-buildhybridai-2026/manage/submissions/1317951-cantrip/project-overview
 - Submit step: https://devpost.com/submit-to/31808-buildhybridai-2026/manage/submissions/1317951-cantrip/finalization
@@ -13,7 +13,7 @@ Deadline: Mon 30 Nov 2026, 2:00 PM PT (11:00 PM Lagos).
 **Project overview**
 - Name: Cantrip
 - Elevator pitch: the tagline from `docs/submission.md`
-- Thumbnail: `docs/gallery/1-cantrip-hybrid-split.png`
+- Thumbnail: `docs/gallery/thumbnail-hosted-job-board.png` (since 24 Nov; was image 1)
 
 **Project details**
 - About the project: `docs/submission.md` from "Inspiration" to "What's next", plus "How to test it", pasted unchanged (Markdown). Not pasted: the Built with line (it has its own field), the Links list (the Try it out links and video field cover it) and the demo script.
@@ -21,10 +21,11 @@ Deadline: Mon 30 Nov 2026, 2:00 PM PT (11:00 PM Lagos).
 - Try it out links: https://sixth-trainer-388221.web.app and https://github.com/ubmids/cantrip
 - Image gallery, in this order, each with a caption:
   1. `1-cantrip-hybrid-split.png`: the cloud compiles, the device runs
-  2. `2-preview-compile-repairing.png`: `?preview`, caption starts "Simulated walkthrough"
-  3. `3-preview-compile-results.png`: `?preview`, caption starts "Simulated walkthrough"
-  4. `4-preview-verdict-highlight.png`: `?preview`, caption starts "Simulated walkthrough"
-  5. `5-real-runs-on-gemini-nano.png`: the real-run table from the README, 14 Nov
+  2. `6-hosted-job-board-cloud-fallback.png`: the real hosted app in cloud fallback, 24 Nov
+  3. `2-preview-compile-repairing.png`: `?preview`, caption starts "Simulated walkthrough"
+  4. `3-preview-compile-results.png`: `?preview`, caption starts "Simulated walkthrough"
+  5. `4-preview-verdict-highlight.png`: `?preview`, caption starts "Simulated walkthrough"
+  6. `5-real-runs-on-gemini-nano.png`: the real-run table from the README, 14 Nov
 - Demo video URL: **empty** (required before Submit).
 
 **Additional info (for judges)**
@@ -34,38 +35,29 @@ Deadline: Mon 30 Nov 2026, 2:00 PM PT (11:00 PM Lagos).
 - Platforms: Web (Chrome) only
 - Main technology requirement: the Firebase AI Logic split (ONLY_IN_CLOUD compiler, ONLY_ON_DEVICE runtime, `inferenceSource` on every verdict, 105 of 105 test runs on the device), Web (Chrome) only, iPhone app never run on a phone. All from `docs/submission.md`.
 - Demo URL: https://sixth-trainer-388221.web.app
-- Testing instructions: the "How to test it" list (without the video line), plus "No credentials are needed."
+- Testing instructions: the 24 Nov list (see below), plus "No credentials are needed."
 - Licence URL: https://github.com/ubmids/cantrip/blob/main/LICENSE (GitHub detects Apache 2.0)
 
-## Changed on 24 Nov: paste these into the draft
+## Updated on 24 Nov (draft saved, still not submitted)
 
-The hosted app now opens on a Job-scam shield and five sample job posts, and browsers without Gemini Nano can run it for real, in the cloud, through Firebase AI Logic's hybrid mode. Four parts of the draft are now out of date. Nothing on Devpost was touched.
+The hosted app now opens on a Job-scam shield, and browsers without Gemini Nano run it in the cloud through Firebase AI Logic's hybrid mode. The draft now matches main at 8049ce9:
 
-1. **Project details > About the project:** paste `docs/submission.md` again, from "Inspiration" to "What's next", plus "How to test it", the same way as before. What changed: a new paragraph in "What it does" (the shield and the cloud fallback), a "Hybrid fallback, kept narrow" bullet and a longer Remote Config line in "How we built it", and a rewritten "How to test it".
-2. **Additional info > Testing instructions:** replace with this:
+1. **About the project:** re-pasted from `docs/submission.md` (Inspiration to What's next, plus How to test it), 10,029 characters, including the shield and cloud-fallback paragraph and the "Hybrid fallback, kept narrow" bullet.
+2. **Testing instructions:** replaced with the new list (one click on any computer, the full loop with Gemini Nano, `?preview`, `npm test`), ending "No credentials are needed."
+3. **Main technology requirement:** the `PREFER_ON_DEVICE` sentence is appended to the end.
+4. **Gallery:** `6-hosted-job-board-cloud-fallback.png` is now image 2 of 6, captioned "Real run, 24 Nov: hosted app, no on-device model here, so Firebase AI Logic's hybrid mode ran the checks in the cloud. Each result says so." The suggested caption was 195 characters and Devpost allows 140, so this is a shorter version.
+5. **Thumbnail:** now `thumbnail-hosted-job-board.png`, a 3:2 crop of the top of image 6 (headline, shield, first flagged post with "ran in the cloud"). It shows a person's problem, which reads better than the diagram. Image 1 is still first in the gallery.
 
-   > - **One click, any computer:** open https://sixth-trainer-388221.web.app and press **Check these 5 posts**. The Job-scam shield checks five sample job posts. Without Gemini Nano the checks run on Gemini in the cloud through Firebase AI Logic's hybrid mode, and each result says so (15 per browser session). **Paste your own post** checks any text.
-   > - **The full loop, with Gemini Nano:** desktop Chrome 148 or later (about 22 GB of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM). Press **Download the model** once, pick **Commission-only jobs** under "Your own rule", press **Compile**, then **Try it** on the examples. A compile takes about 1 to 3 minutes, and every check then runs on your device.
-   > - **See a compile without Gemini Nano:** https://sixth-trainer-388221.web.app/?preview is the compile interface with scripted answers. It says so on every screen, and no model runs in it.
-   > - **Code without any keys:** `npm install && npm test` runs the compiler loop, the page splitter and the page badges against fake models.
-   >
-   > No credentials are needed.
-
-3. **Additional info > Main technology requirement:** add this sentence to the end of what is there:
-
-   > Ready programs can also run with `InferenceMode.PREFER_ON_DEVICE`: Gemini Nano when Chrome has it, and `gemini-3.5-flash-lite` in the cloud when it doesn't. That is only for text the person picks or pastes in the web app, it is announced before the run, capped at 15 per browser session, and every verdict shows `inferenceSource`. Compiling and the extension's page reading stay `ONLY_ON_DEVICE`.
-
-4. **Image gallery (optional, recommended):** add `docs/gallery/6-hosted-job-board-cloud-fallback.png` as the second image, captioned: "The hosted app on a computer without Gemini Nano: the Job-scam shield checked five sample posts in the cloud through Firebase AI Logic's hybrid mode, and every result says so. A real run, 24 Nov." It is a real screenshot of the hosted site, not the simulated walkthrough. Consider using it as the thumbnail, because it shows a person's problem rather than a diagram.
+Already on the draft from you (not touched by me): country of residence (Nigeria) and the three attestation checkboxes, all ticked.
 
 ## Left for you
 
-1. **Country of residence** (Additional info). Not in the docs, so left blank. Check it is an eligible country under the rules.
-2. **Organization name** (Additional info, marked required "if applicable"). Left blank; put "N/A" or leave it if Devpost accepts that for an individual.
-3. **The three attestation checkboxes** on Additional info (age of majority, eligible jurisdiction, not a sponsor employee). Not ticked.
-4. **Record the video**, make it public on YouTube, and paste the link into Project details, Demo video URL. Also add it to the README "Try it" table (Video row) and push. The About text's "How to test it" says "the video shows the full loop on real hardware", which is only true once it is up.
-5. **Terms checkbox and the Submit project button** on the Submit step. Not touched.
+1. **Organization name** (Additional info). Devpost still marks Additional info "is required to submit", and this is the only empty required field there. Put "N/A" or your name as an individual.
+2. **Record the video**, make it public on YouTube, and paste the link into Project details, Demo video URL (the other step still flagged). Also add it to the README "Try it" table (Video row) and push. The About text's "How to test it" says "the video shows the full loop on real hardware", which is only true once it is up.
+3. **Terms checkbox and the Submit project button** on the Submit step. Not touched.
+4. Optional: decide whether "New" is the right answer for new or existing (see above), and whether to keep the three iPhone tags in Built with.
 
 ## Not done
 
 - The Chrome extension badges are not in the gallery. They need Gemini Nano running and the extension loaded by hand, and the shell's headless Chrome has neither, so a real capture wasn't possible. If you get a good frame while recording the video, add it as a sixth image.
-- The real hosted app (without `?preview`) isn't in the gallery: in headless Chrome it only shows "This browser has no on-device model".
+- The real hosted app is in the gallery since 24 Nov (image 2), running in the cloud fallback.
