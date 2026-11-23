@@ -24,6 +24,7 @@ Devpost requires four things: a working demo app, a public repo, a demo video an
 ## Worth checking before judging (10 to 16 Dec)
 
 - The hosted site runs on the Spark plan and the free Gemini tier. If several judges compile at once they may hit the free rate limit. The app now says so in words and the compiler falls back to the lighter model, but it is your call whether that is enough.
+- Judges without Gemini Nano can now run the Job-scam shield in the cloud, 15 checks per browser session. To change the cap without a redeploy, add `cloud_checks_per_session` in Remote Config (0 turns the cloud fallback off); `cloud_check_model` changes the model.
 - Firebase App Check turns away browsers that reCAPTCHA scores as automated, and the SDK then waits a day before trying again in that browser. A judge in a normal Chrome window should be fine.
 
 ## After submitting

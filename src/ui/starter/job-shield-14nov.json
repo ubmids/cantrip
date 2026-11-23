@@ -1,0 +1,296 @@
+{
+ "_source": "Exported unchanged from the browser storage of the real run on 14 Nov 2026 (localhost:5173, Chrome 157, Gemini Nano). Also published to Firestore as shared/etcdhdd. Only shareCode was removed.",
+ "cantrip": {
+  "id": "f50f99b24e0508ff",
+  "spec": {
+   "name": "Job Compensation Detector",
+   "intent": "Warn me when a job post is really commission-only or unpaid, even if it hides it.",
+   "description": "Identifies job postings that are unpaid, equity-only, or commission-only, distinguishing them from standard paid roles.",
+   "labels": [
+    "standard pay",
+    "unpaid job",
+    "commission only"
+   ],
+   "flagLabels": [
+    "unpaid job",
+    "commission only"
+   ]
+  },
+  "tests": [
+   {
+    "id": "aca47b4191641cbe",
+    "input": "Account Executive position offering a competitive $60,000 base salary plus uncapped commission on all software sales.",
+    "expected": "standard pay",
+    "why": "The job includes a guaranteed base salary alongside commission.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "b821b1f1920523d8",
+    "input": "Earn up to $100,000 in your first year! High-ticket sales closer position. 100% commission payout per transaction.",
+    "expected": "commission only",
+    "why": "The compensation is strictly 100% commission with no base pay.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "a90d9d65cd683880",
+    "input": "Responsibilities include managing daily office operations, scheduling client meetings, and responding to customer support emails.",
+    "expected": "standard pay",
+    "why": "This is a text fragment listing duties without mentioning compensation, so it gets the calm label.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "c9da1fb255391321",
+    "input": "Great opportunity for aspiring writers! Create content for our online publication. Unpaid role, but excellent exposure for your portfolio.",
+    "expected": "unpaid job",
+    "why": "The position offers exposure instead of monetary compensation.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "302f164ae28f4e49",
+    "input": "Founded in 2018, Acme Corp is a leading provider of sustainable logistics solutions across North America.",
+    "expected": "standard pay",
+    "why": "This company description fragment contains no compensation details.",
+    "origin": "generated",
+    "split": "holdout"
+   },
+   {
+    "id": "7e295cb7fbb85f89",
+    "input": "Seeking co-founder software engineer. 0% cash salary, 5% equity vesting over 4 years. Huge upside potential!",
+    "expected": "unpaid job",
+    "why": "The position pays zero cash salary and offers equity only.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "a60f519caff1a87c",
+    "input": "Summer research assistant needed. $200 total stipend for 30 hours per week across 10 weeks, intended for course credit.",
+    "expected": "unpaid job",
+    "why": "A nominal stipend for heavy hours alongside academic credit is considered an unpaid or stipend-only role.",
+    "origin": "generated",
+    "split": "holdout"
+   },
+   {
+    "id": "278394a0c4de30c8",
+    "input": "No hourly rate provided. You earn strictly based on the sales volume your team generates each month.",
+    "expected": "commission only",
+    "why": "Pay is entirely dependent on performance and sales volume with no hourly rate.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "341ab798e2933249",
+    "input": "Warehouse Associate - $18/hr. Shift times: 8 AM - 4 PM Monday through Friday. Paid weekly.",
+    "expected": "standard pay",
+    "why": "The post provides a standard hourly wage.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "13415a1976eed0bc",
+    "input": "Tired of companies asking you to work for 'exposure'? We don't do that here. We pay a competitive $35/hr base rate.",
+    "expected": "standard pay",
+    "why": "Mentions 'exposure' in a sarcastic/contrast context, but actually pays a standard hourly base rate.",
+    "origin": "generated",
+    "split": "tune"
+   },
+   {
+    "id": "f77bcf09d5264fb8",
+    "input": "This is a strictly commission-based role where your effort directly determines your paycheck every week.",
+    "expected": "commission only",
+    "why": "Explicitly states the role is strictly commission-based.",
+    "origin": "generated",
+    "split": "holdout"
+   },
+   {
+    "id": "f35731c9b9e19e9c",
+    "input": "Looking for volunteer social media managers to help run our non-profit accounts 5 hours a week.",
+    "expected": "unpaid job",
+    "why": "The post asks for volunteer work without monetary compensation.",
+    "origin": "generated",
+    "split": "tune"
+   }
+  ],
+  "programs": {
+   "gemini-nano": {
+    "target": "gemini-nano",
+    "program": {
+     "systemPrompt": "Analyze job post text fragments to detect unpaid or commission-only compensation structures.\n\nCheck for these signals:\n1. 'unpaid job': Role is unpaid, volunteer, stipend-only, equity-only, or compensated only with college credit or exposure.\n2. 'commission only': Role pay is strictly commission-based, 100% commission, OTE only with no base pay, or paid per sale with no guaranteed hourly or salary base.\n3. 'standard pay': Role provides a base salary, hourly wage, base pay plus commission, or does not mention compensation at all.\n\nRules:\n- Text fragments without compensation information (e.g., job duties, company description) must be classified as 'standard pay'.\n- Guaranteed base pay combined with commission is 'standard pay'.\n- If text indicates unpaid work and commission, prioritize 'unpaid job'.",
+     "examples": [
+      {
+       "input": "We are looking for an energetic Sales Executive! This role offers unlimited earning potential with 100% commission per closed deal. No base salary is provided.",
+       "label": "commission only",
+       "reason": "The posting explicitly states it is 100% commission with no base salary.",
+       "evidence": "100% commission per closed deal. No base salary"
+      },
+      {
+       "input": "Join our fast-growing startup as a Marketing Intern! You will gain valuable experience and portfolio pieces. This position is unpaid but offers college credit.",
+       "label": "unpaid job",
+       "reason": "The posting specifies the role is unpaid and offers college credit instead of a wage.",
+       "evidence": "This position is unpaid but offers college credit"
+      },
+      {
+       "input": "Senior Software Engineer - $140,000 - $160,000 base salary plus annual performance bonus and full health benefits.",
+       "label": "standard pay",
+       "reason": "The posting includes a clear guaranteed base salary.",
+       "evidence": "$140,000 - $160,000 base salary"
+      }
+     ]
+    },
+    "tuneAccuracy": 1,
+    "holdoutAccuracy": 1,
+    "holdoutResults": [
+     {
+      "testId": "302f164ae28f4e49",
+      "expected": "standard pay",
+      "got": "standard pay",
+      "reason": "The text does not contain any information about compensation.",
+      "ok": true,
+      "ms": 2109,
+      "source": "on_device"
+     },
+     {
+      "testId": "a60f519caff1a87c",
+      "expected": "unpaid job",
+      "got": "unpaid job",
+      "reason": "The role is compensated only with a stipend and course credit.",
+      "ok": true,
+      "ms": 2013,
+      "source": "on_device"
+     },
+     {
+      "testId": "f77bcf09d5264fb8",
+      "expected": "commission only",
+      "got": "commission only",
+      "reason": "The role is strictly commission-based, with paycheck dependent on weekly effort.",
+      "ok": true,
+      "ms": 2135,
+      "source": "on_device"
+     }
+    ],
+    "rounds": [
+     {
+      "round": 1,
+      "kind": "design",
+      "program": {
+       "systemPrompt": "Analyze job post text fragments to detect unpaid or commission-only compensation structures.\n\nCheck for these signals:\n1. 'unpaid job': Role is unpaid, volunteer, stipend-only, equity-only, or compensated only with college credit or exposure.\n2. 'commission only': Role pay is strictly commission-based, 100% commission, OTE only with no base pay, or paid per sale with no guaranteed hourly or salary base.\n3. 'standard pay': Role provides a base salary, hourly wage, base pay plus commission, or does not mention compensation at all.\n\nRules:\n- Text fragments without compensation information (e.g., job duties, company description) must be classified as 'standard pay'.\n- Guaranteed base pay combined with commission is 'standard pay'.\n- If text indicates unpaid work and commission, prioritize 'unpaid job'.",
+       "examples": [
+        {
+         "input": "We are looking for an energetic Sales Executive! This role offers unlimited earning potential with 100% commission per closed deal. No base salary is provided.",
+         "label": "commission only",
+         "reason": "The posting explicitly states it is 100% commission with no base salary.",
+         "evidence": "100% commission per closed deal. No base salary"
+        },
+        {
+         "input": "Join our fast-growing startup as a Marketing Intern! You will gain valuable experience and portfolio pieces. This position is unpaid but offers college credit.",
+         "label": "unpaid job",
+         "reason": "The posting specifies the role is unpaid and offers college credit instead of a wage.",
+         "evidence": "This position is unpaid but offers college credit"
+        },
+        {
+         "input": "Senior Software Engineer - $140,000 - $160,000 base salary plus annual performance bonus and full health benefits.",
+         "label": "standard pay",
+         "reason": "The posting includes a clear guaranteed base salary.",
+         "evidence": "$140,000 - $160,000 base salary"
+        }
+       ]
+      },
+      "results": [
+       {
+        "testId": "aca47b4191641cbe",
+        "expected": "standard pay",
+        "got": "standard pay",
+        "reason": "The posting provides a guaranteed base salary plus commission.",
+        "ok": true,
+        "ms": 3490,
+        "source": "on_device"
+       },
+       {
+        "testId": "b821b1f1920523d8",
+        "expected": "commission only",
+        "got": "commission only",
+        "reason": "The posting explicitly states 100% commission payout.",
+        "ok": true,
+        "ms": 1998,
+        "source": "on_device"
+       },
+       {
+        "testId": "a90d9d65cd683880",
+        "expected": "standard pay",
+        "got": "standard pay",
+        "reason": "The text focuses on responsibilities without mentioning compensation.",
+        "ok": true,
+        "ms": 1691,
+        "source": "on_device"
+       },
+       {
+        "testId": "c9da1fb255391321",
+        "expected": "unpaid job",
+        "got": "unpaid job",
+        "reason": "The posting explicitly states the role is unpaid and offers portfolio exposure.",
+        "ok": true,
+        "ms": 2064,
+        "source": "on_device"
+       },
+       {
+        "testId": "7e295cb7fbb85f89",
+        "expected": "unpaid job",
+        "got": "unpaid job",
+        "reason": "The posting specifies a 0% cash salary and offers equity vesting instead.",
+        "ok": true,
+        "ms": 2159,
+        "source": "on_device"
+       },
+       {
+        "testId": "278394a0c4de30c8",
+        "expected": "commission only",
+        "got": "commission only",
+        "reason": "The posting specifies earning strictly based on sales volume.",
+        "ok": true,
+        "ms": 1878,
+        "source": "on_device"
+       },
+       {
+        "testId": "341ab798e2933249",
+        "expected": "standard pay",
+        "got": "standard pay",
+        "reason": "The posting explicitly states a guaranteed hourly wage.",
+        "ok": true,
+        "ms": 2413,
+        "source": "on_device"
+       },
+       {
+        "testId": "13415a1976eed0bc",
+        "expected": "standard pay",
+        "got": "standard pay",
+        "reason": "The text explicitly states a base rate is provided.",
+        "ok": true,
+        "ms": 1987,
+        "source": "on_device"
+       },
+       {
+        "testId": "f35731c9b9e19e9c",
+        "expected": "unpaid job",
+        "got": "unpaid job",
+        "reason": "The role is specifically designated as volunteer work.",
+        "ok": true,
+        "ms": 1752,
+        "source": "on_device"
+       }
+      ],
+      "accuracy": 1
+     }
+    ],
+    "cloudCalls": 1,
+    "deviceCalls": 12,
+    "compiledAt": 1794672723196
+   }
+  },
+  "enabled": true,
+  "createdAt": 1794672723196,
+  "updatedAt": 1794672723196
+ }
+}

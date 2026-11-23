@@ -2,12 +2,13 @@ import { html, nothing, render, type TemplateResult } from "lit-html";
 import { addCorrection, compileIntent, recompile, type CompileEvent } from "../core/compiler";
 import { clip, TARGET_NAMES } from "../core/prompts";
 import { runProgram } from "../core/run";
-import type { Cantrip, CompiledProgram, Program, Round, Spec, TestCase, TestResult, Verdict } from "../core/types";
+import type { Cantrip, CompiledProgram, JsonModel, Program, Round, Spec, TestCase, TestResult, Verdict } from "../core/types";
 import type { DeviceState } from "../firebase/ai";
 import type { Host, PageScan } from "./host";
 import { copyWithoutBlocking } from "./clipboard";
 import { friendlyError } from "../core/errors";
 import { SAMPLES } from "./samples";
+import { BOARD_POSTS, jobScamShield, STARTER_ID } from "./starter";
 
 interface LiveRound {
   n: number;
@@ -35,7 +36,23 @@ interface CompileView {
   abort: AbortController;
 }
 
+interface BoardRun {
+  results: ({ verdict: Verdict } | { error: string; limit?: true } | null)[];
+  running: boolean;
+  /** Why the run stopped early, when it did. */
+  stopped?: string;
+}
+
+/** Where the next check of a ready cantrip would run, or why it can't. */
+type Route =
+  | { ok: true; where: "device" | "cloud"; model: JsonModel }
+  | { ok: false; why: "checking" | "no-device" | "limit" };
+
+const REPO = "https://github.com/ubmids/cantrip";
+
 interface State {
+  loaded: boolean;
+  board: BoardRun | null;
   cantrips: Cantrip[];
   device: DeviceState | "checking";
   downloadPct: number | null;
@@ -52,11 +69,17 @@ interface State {
   page: PageScan | null;
 }
 
+const LIMIT_TEXT =
+  "That's every cloud check this visit allows. They are capped because the demo runs on the free Gemini tier. With Gemini Nano in desktop Chrome, checks run on your device with no limit and no cost.";
+
 const pct = (x: number | null | undefined) => (x == null ? "–" : `${Math.round(x * 100)}%`);
 const frac = (rs: TestResult[]) => `${rs.filter((r) => r.ok).length}/${rs.length}`;
+const secs = (ms: number) => (ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
 
 export function mountApp(root: HTMLElement, host: Host) {
   const s: State = {
+    loaded: false,
+    board: null,
     cantrips: [],
     device: "checking",
     downloadPct: null,
@@ -257,20 +280,85 @@ export function mountApp(root: HTMLElement, host: Host) {
     window.scrollTo?.({ top: 0, behavior: "smooth" });
   }
 
+  /**
+   * Gemini Nano when this browser has it. Otherwise, in the web app, Firebase AI Logic's hybrid mode,
+   * which sends the text to Gemini in the cloud, within the session's cap.
+   */
+  function route(): Route {
+    if (s.device === "available") return { ok: true, where: "device", model: host.device };
+    if (s.device === "checking") return { ok: false, why: "checking" };
+    if (!host.hybrid || !host.cloudBudget) return { ok: false, why: "no-device" };
+    if (host.cloudBudget.left() <= 0) return { ok: false, why: "limit" };
+    return { ok: true, where: "cloud", model: host.hybrid };
+  }
+
+  /**
+   * Run one ready cantrip on one text where the route says, spending a cloud check when it goes to
+   * the cloud. Errors come back as sentences a person can act on.
+   */
+  async function check(c: Cantrip, text: string): Promise<{ verdict: Verdict } | { error: string; limit?: true }> {
+    const compiled = c.programs[host.target];
+    if (!compiled) return { error: "This cantrip has no program for this device yet." };
+    const r = route();
+    if (!r.ok) return r.why === "limit" ? { error: LIMIT_TEXT, limit: true } : { error: "No model can run this in this browser." };
+    if (r.where === "cloud" && !host.cloudBudget!.take()) return { error: LIMIT_TEXT, limit: true };
+    try {
+      return { verdict: await runProgram(r.model, c.spec, compiled.program, text) };
+    } catch (err) {
+      return { error: friendlyError(err, { cloudCheck: r.where === "cloud" }) };
+    }
+  }
+
   async function tryIt(c: Cantrip) {
     const compiled = c.programs[host.target];
-    if (!compiled || !s.tryText.trim()) return;
+    if (!compiled || !s.tryText.trim() || s.tryBusy) return;
     s.tryBusy = true;
     s.tryError = null;
     s.tryResult = null;
     draw();
-    try {
-      const v = await runProgram(host.device, c.spec, compiled.program, s.tryText);
-      s.tryResult = { ...v, text: clip(s.tryText) };
-    } catch (err) {
-      s.tryError = friendlyError(err);
-    }
+    const out = await check(c, s.tryText);
+    if ("verdict" in out) s.tryResult = { ...out.verdict, text: clip(s.tryText) };
+    else s.tryError = out.error;
     s.tryBusy = false;
+    draw();
+  }
+
+  /** Put the Job-scam shield in the library, once. */
+  async function addStarter(): Promise<Cantrip> {
+    const have = s.cantrips.find((c) => c.id === STARTER_ID);
+    if (have) return have;
+    const c = jobScamShield();
+    s.cantrips = [c, ...s.cantrips];
+    await persist();
+    return c;
+  }
+
+  async function openStarter() {
+    const c = await addStarter();
+    openCantrip(c.id);
+  }
+
+  /** Run the Job-scam shield on the sample board, one post at a time, so results land as they come. */
+  async function checkBoard() {
+    if (s.board?.running) return;
+    const shield = await addStarter();
+    s.board = { results: BOARD_POSTS.map(() => null), running: true };
+    draw();
+    for (let i = 0; i < BOARD_POSTS.length; i++) {
+      const r = route();
+      if (!r.ok) {
+        s.board.stopped = r.why === "limit" ? LIMIT_TEXT : "This browser can't run the check.";
+        break;
+      }
+      const out = await check(shield, `${BOARD_POSTS[i].title}. ${BOARD_POSTS[i].body}`);
+      if ("limit" in out) {
+        s.board.stopped = out.error;
+        break;
+      }
+      s.board.results[i] = out;
+      draw();
+    }
+    s.board.running = false;
     draw();
   }
 
@@ -351,41 +439,49 @@ export function mountApp(root: HTMLElement, host: Host) {
     const d = s.device;
     if (host.simulated) return html`<span class="pill muted"><i class="dot"></i>Simulated models</span>`;
     if (s.downloadPct != null)
-      return html`<span class="pill device">Downloading model ${pct(s.downloadPct)}</span>`;
+      return html`<span class="pill device"><i class="dot"></i>Downloading model ${pct(s.downloadPct)}</span>`;
+    const fallback = d !== "available" && d !== "checking" && host.hybrid;
     const label: Record<string, string> = {
-      checking: "Checking this device…",
+      checking: "Checking this browser…",
       available: `${host.target === "gemini-nano" ? "Gemini Nano" : "On-device model"} ready`,
-      downloadable: "On-device model not downloaded",
-      downloading: "On-device model downloading",
-      unavailable: "No on-device model here",
-      unsupported: "This browser has no on-device model",
+      downloadable: fallback ? "Model not downloaded · cloud fallback" : "On-device model not downloaded",
+      downloading: fallback ? "Model downloading · cloud fallback" : "On-device model downloading",
+      unavailable: fallback ? "No on-device model · cloud fallback" : "No on-device model here",
+      unsupported: fallback ? "No on-device model · cloud fallback" : "This browser has no on-device model",
     };
-    return html`<span class="pill ${d === "available" ? "device" : "muted"}" title=${TARGET_NAMES[host.target]}
-      ><i class="dot"></i>${label[d]}</span
+    return html`<span class="pill ${d === "available" ? "device" : fallback ? "cloud-pill" : "muted"}" title=${TARGET_NAMES[host.target]}
+      ><i class="dot ${d === "checking" ? "pulse" : ""}"></i>${label[d]}</span
     >`;
   };
 
+  /** Why compiling needs Gemini Nano, and what to do without it. Shown under the composer. */
   const deviceHelp = () => {
     if (s.device === "available" || s.device === "checking" || s.downloadPct != null) return nothing;
     if (s.device === "downloadable" || s.device === "downloading")
       return html`<div class="notice">
-        <p>Cantrip runs its programs on your device. Chrome needs to download Gemini Nano once.</p>
+        <p>
+          Compiling tests the program on the model that will run it, so it needs Gemini Nano. Chrome downloads it once
+          (about 4 GB, and it wants about 22 GB of free disk space).
+        </p>
         <button class="btn" @click=${downloadModel}>Download the model</button>
       </div>`;
     const walkthrough =
       host.kind === "web" && !host.simulated
         ? html`<p class="small">
-            No Gemini Nano here? <a href="?preview">See a simulated walkthrough of the interface</a> (no model runs in
-            it), or watch the demo video linked in the README.
+            No Gemini Nano here? The Job-scam shield above still runs, in the cloud. To see a compile, open the
+            <a href="?preview">simulated walkthrough</a> (scripted, no model runs in it) or the demo video linked in the
+            <a href=${REPO} target="_blank" rel="noopener">README</a>.
           </p>`
         : nothing;
     return html`<div class="notice">
       <p>
         ${s.device === "unavailable"
-          ? html`Chrome offers Gemini Nano here but says it can't run on this computer. It needs about 22 GB of free disk
-              space and either 16 GB of memory or a GPU with more than 4 GB of VRAM.`
-          : html`Programs run on Gemini Nano inside desktop Chrome, and this browser doesn't offer it. Use an up-to-date
-              desktop Chrome (148 or later) on a computer with about 22 GB of free disk space and 16 GB of memory.`}
+          ? html`Compiling tests the program on Gemini Nano, on your device. Chrome offers Gemini Nano here but says it
+              can't run on this computer: it needs about 22 GB of free disk space and either 16 GB of memory or a GPU with
+              more than 4 GB of VRAM.`
+          : html`Compiling tests the program on Gemini Nano, on your device, and this browser doesn't offer it. Use an
+              up-to-date desktop Chrome (148 or later) on a computer with about 22 GB of free disk space and 16 GB of
+              memory.`}
         <code>chrome://on-device-internals</code> shows what Chrome is missing.
       </p>
       ${walkthrough}
@@ -402,7 +498,7 @@ export function mountApp(root: HTMLElement, host: Host) {
   const banners = () => html`${host.simulated
       ? html`<div class="banner sim" role="note">
           <b>Simulated walkthrough.</b> No AI model runs here: the cloud and device answers are scripted, to show the
-          interface only, and only the commission-only sample is scripted. Real results need Gemini Nano in desktop Chrome.
+          interface only, and only the commission-only sample is scripted. Real compiles need Gemini Nano in desktop Chrome.
           ${host.kind === "web" && new URLSearchParams(location.search).has("preview")
             ? html`<a href=${location.pathname}>Leave the walkthrough</a>`
             : nothing}
@@ -410,12 +506,20 @@ export function mountApp(root: HTMLElement, host: Host) {
       : nothing}
     ${host.setupProblem ? html`<div class="banner warn">${host.setupProblem}</div>` : nothing}`;
 
-  const composer = () => html`<section class="composer card">
-    <h1>Teach your browser a rule.</h1>
-    <p class="lede">
-      Say what to watch for. Gemini in the cloud writes a tiny program for the model on your device, tests it there,
-      and fixes what fails. Then it runs on every page for free, and what you read never leaves your machine.
-    </p>
+  /** The board and the composer both start here when there is no hero (the simulated walkthrough keeps its old look). */
+  const composer = () => html`<section class="composer card" id="compose">
+    ${hero()
+      ? html`<p class="eyebrow">Your own rule</p>
+          <h2>Watching for a different trap? Say it in one sentence.</h2>
+          <p class="lede">
+            Gemini in the cloud writes a tiny program for the model on your device, tests it there, and fixes what fails.
+            Then it runs on every page for free, and what you read never leaves your machine.
+          </p>`
+      : html`<h1>Teach your browser a rule.</h1>
+          <p class="lede">
+            Say what to watch for. Gemini in the cloud writes a tiny program for the model on your device, tests it
+            there, and fixes what fails. Then it runs on every page for free, and what you read never leaves your machine.
+          </p>`}
     <form
       @submit=${(e: Event) => {
         e.preventDefault();
@@ -447,6 +551,103 @@ export function mountApp(root: HTMLElement, host: Host) {
     </form>
     ${deviceHelp()}
   </section>`;
+
+  /** The hero only shows in the real web app: the simulated walkthrough stays as it was. */
+  const hero = () => host.kind === "web" && !host.simulated;
+
+  /** One line before a run that says where it will happen, so text never goes to the cloud unannounced. */
+  const routeNote = (count: number) => {
+    const r = route();
+    if (r.ok && r.where === "device")
+      return html`<p class="where device-note"><span class="device">▣</span> Runs on Gemini Nano on this device. Nothing is sent anywhere.</p>`;
+    if (r.ok && r.where === "cloud") {
+      const left = host.cloudBudget!.left();
+      return html`<p class="where cloud-note">
+        <span aria-hidden="true">☁︎</span> This browser has no on-device model, so Firebase AI Logic will send
+        ${count === 1 ? "this text" : "these posts"} to Gemini in the cloud instead. Each result says where it ran.
+        <span class="muted">${left} cloud ${left === 1 ? "check" : "checks"} left this visit.</span>
+      </p>`;
+    }
+    if (!r.ok && r.why === "checking") return html`<p class="where muted"><i class="spinner tiny"></i> Checking this browser…</p>`;
+    if (!r.ok && r.why === "limit") return html`<p class="where limit">${LIMIT_TEXT}</p>`;
+    return html`<p class="where muted">This browser has no on-device model to run it.</p>`;
+  };
+
+  const boardCard = (i: number) => {
+    const post = BOARD_POSTS[i];
+    const out = s.board?.results[i] ?? null;
+    const pending = s.board?.running && !out;
+    const v = out && "verdict" in out ? out.verdict : null;
+    return html`<li class="post ${v?.flagged ? "is-flagged" : v ? "is-fine" : ""} ${pending ? "pending" : ""}">
+      ${v?.flagged
+        ? html`<span class="badges"><span class="badge">⚑ ${v.label}</span></span>`
+        : nothing}
+      <h3>${post.title}</h3>
+      <p class="meta">${post.meta}</p>
+      <p class="body">${v ? highlight(post.body, v.evidence) : post.body}</p>
+      ${v
+        ? html`<p class="post-verdict">
+            ${v.flagged ? nothing : html`<span class="ok-label">✓ ${v.label}</span>`}
+            <span class="reason-line">${v.reason}</span>
+            ${sourceBadge(v)}
+          </p>`
+        : out && "error" in out
+          ? html`<p class="post-verdict flag small">${out.error}</p>`
+          : pending
+            ? html`<p class="post-verdict muted small"><i class="spinner tiny"></i> Waiting for its turn…</p>`
+            : nothing}
+    </li>`;
+  };
+
+  const board = () => {
+    const b = s.board;
+    const done = b ? b.results.filter(Boolean).length : 0;
+    const flagged = b ? b.results.filter((x) => x && "verdict" in x && x.verdict.flagged).length : 0;
+    const r = route();
+    return html`<section class="hero">
+      <p class="eyebrow">For job seekers</p>
+      <h1>Catch the job posts that hide there's no pay.</h1>
+      <p class="lede">
+        Some posts bury the fact that a role is commission-only or unpaid. Cantrip reads each post and flags those, quoting
+        the words that give it away. With Gemini Nano in Chrome it runs on your own device, for free, so your job search
+        never leaves your machine.
+      </p>
+      <div class="card shield">
+        <div class="row between wrap">
+          <div>
+            <h2 class="shield-title">Job-scam shield</h2>
+            <p class="muted small">Five sample posts from made-up companies. Try it on them, or on a post of your own.</p>
+          </div>
+          <div class="row wrap gap">
+            <button class="btn ghost small" @click=${openStarter}>Paste your own post</button>
+            <button class="btn primary" ?disabled=${!r.ok || b?.running} @click=${checkBoard}>
+              ${b?.running ? html`<i class="spinner tiny light"></i> Checking ${done + 1} of ${BOARD_POSTS.length}…` : b ? "Check again" : `Check these ${BOARD_POSTS.length} posts`}
+            </button>
+          </div>
+        </div>
+        ${b && !b.running
+          ? html`<p class="summary" role="status">
+              <b class=${flagged ? "flag" : "device"}>${flagged} of ${done} flagged</b>
+              ${done < BOARD_POSTS.length ? html`<span class="muted">· ${BOARD_POSTS.length - done} not checked</span>` : nothing}
+            </p>`
+          : nothing}
+        ${b?.stopped ? html`<p class="where limit">${b.stopped}</p>` : routeNote(BOARD_POSTS.length)}
+        <ol class="board" aria-live="polite">
+          ${BOARD_POSTS.map((_, i) => boardCard(i))}
+        </ol>
+      </div>
+      <div class="realboard">
+        <h3>On a real job board</h3>
+        <p>
+          The Cantrip Chrome extension does the same to the page you are reading. Press <b>Read this page</b> and it splits
+          the page into posts, checks each one with Gemini Nano on your device, and puts a badge like these on the ones
+          that hide their pay, with the deciding words highlighted. The page never leaves your machine, and the extension
+          never falls back to the cloud. It is not in the Chrome Web Store yet: the
+          <a href=${REPO} target="_blank" rel="noopener">README</a> shows how to load it.
+        </p>
+      </div>
+    </section>`;
+  };
 
   const dots = (results: TestResult[], total: number, tests: TestCase[]) => {
     const byId = new Map(tests.map((t) => [t.id, t]));
@@ -563,8 +764,10 @@ export function mountApp(root: HTMLElement, host: Host) {
     host.simulated
       ? html`<span class="src">simulated · no model ran</span>`
       : v.source === "in_cloud"
-      ? html`<span class="src cloud">☁ ran in the cloud · ${v.ms} ms</span>`
-      : html`<span class="src device">▣ ran on this device · ${v.ms} ms · $0</span>`;
+        ? html`<span class="src in-cloud">☁︎ ran in the cloud: no on-device model here · ${secs(v.ms)}</span>`
+        : v.source === "on_device"
+          ? html`<span class="src device">▣ ran on device · ${secs(v.ms)} · $0</span>`
+          : html`<span class="src muted">${secs(v.ms)}</span>`;
 
   const programView = (p: CompiledProgram) => html`<details class="program">
     <summary>See the program Gemini wrote for ${TARGET_NAMES[p.target]}</summary>
@@ -590,23 +793,37 @@ export function mountApp(root: HTMLElement, host: Host) {
         <button class="btn primary" ?disabled=${s.device !== "available"} @click=${() => startRecompile(c)}>Compile for this device</button>
       </div>`;
     const r = s.tryResult;
+    const way = route();
+    // A correction recompiles, and compiling runs the tests on Gemini Nano.
+    const canCorrect = host.simulated || s.device === "available";
     return html`<section class="try">
       <h3>Try it on anything</h3>
       ${sample
         ? html`<div class="chips">
             ${sample.tries.map(
-              (t, i) => html`<button class="chip" @click=${() => ((s.tryText = t), (s.tryResult = null), draw())}>Example ${i + 1}</button>`,
+              (t, i) => html`<button class="chip ${s.tryText === t ? "on" : ""}" @click=${() => ((s.tryText = t), (s.tryResult = null), (s.tryError = null), draw())}>Example ${i + 1}</button>`,
             )}
           </div>`
         : nothing}
-      <textarea rows="5" placeholder="Paste a job post, an email, a review…" .value=${s.tryText}
+      <label class="sr" for="try-text">Text to check</label>
+      <textarea id="try-text" rows="5" placeholder="Paste a job post, an email, a review…" .value=${s.tryText}
         @input=${(e: Event) => ((s.tryText = (e.target as HTMLTextAreaElement).value), draw())}></textarea>
+      ${host.simulated ? nothing : routeNote(1)}
       <div class="row end">
-        <button class="btn primary" ?disabled=${s.tryBusy || !s.tryText.trim() || s.device !== "available"} @click=${() => tryIt(c)}>
-          ${s.tryBusy ? "Running on device…" : "Run on device"}
+        <button class="btn primary" ?disabled=${s.tryBusy || !s.tryText.trim() || !way.ok} @click=${() => tryIt(c)}>
+          ${s.tryBusy
+            ? html`<i class="spinner tiny light"></i> ${way.ok && way.where === "cloud" ? "Running in the cloud…" : "Running on device…"}`
+            : way.ok && way.where === "cloud"
+              ? "Run in the cloud"
+              : "Run on device"}
         </button>
       </div>
-      ${s.tryError ? html`<p class="flag">${s.tryError}</p>` : nothing}
+      ${s.tryError
+        ? html`<div class="error-box" role="alert">
+            <p>${s.tryError}</p>
+            ${way.ok ? html`<button class="btn small" @click=${() => tryIt(c)}>Try again</button>` : nothing}
+          </div>`
+        : nothing}
       ${r
         ? html`<div class="result ${r.flagged ? "is-flagged" : "is-fine"}">
             <div class="row between">
@@ -615,12 +832,16 @@ export function mountApp(root: HTMLElement, host: Host) {
             </div>
             <p class="reason">${r.reason}</p>
             <blockquote>${highlight(r.text, r.evidence)}</blockquote>
-            <div class="correct">
-              <span class="muted small">Wrong? Tell it the right answer and it recompiles:</span>
-              ${c.spec.labels
-                .filter((l) => l !== r.label)
-                .map((l) => html`<button class="chip" @click=${() => correct(c, r.text, l)}>It's ${l}</button>`)}
-            </div>
+            ${canCorrect
+              ? html`<div class="correct">
+                  <span class="muted small">Wrong? Tell it the right answer and it recompiles:</span>
+                  ${c.spec.labels
+                    .filter((l) => l !== r.label)
+                    .map((l) => html`<button class="chip" @click=${() => correct(c, r.text, l)}>It's ${l}</button>`)}
+                </div>`
+              : html`<p class="muted small correct">
+                  Wrong? With Gemini Nano you can correct it, and Cantrip recompiles on your device so it learns that case.
+                </p>`}
           </div>`
         : nothing}
     </section>`;
@@ -669,6 +890,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       </div>
       <p class="intent">“${c.spec.intent}”</p>
       <div class="labels">${c.spec.labels.map((l) => html`<span class="label ${c.spec.flagLabels.includes(l) ? "flagged" : ""}">${l}</span>`)}</div>
+      ${c.provenance ? html`<p class="provenance small">${c.provenance}</p>` : nothing}
       ${compiled
         ? html`<div class="meters">
               <div class="meter"><b>${pct(compiled.tuneAccuracy)}</b><span>tuning tests</span></div>
@@ -692,7 +914,16 @@ export function mountApp(root: HTMLElement, host: Host) {
   };
 
   const library = () => html`<section class="library">
-    ${s.cantrips.length ? html`<h2>Your cantrips</h2>` : nothing}
+    <h2>Your cantrips</h2>
+    ${!s.loaded
+      ? html`<div class="skeleton" aria-busy="true" aria-label="Loading your cantrips"><span></span><span></span></div>`
+      : s.cantrips.length
+        ? nothing
+        : html`<p class="empty">
+            Nothing here yet. ${hero()
+              ? html`Check the sample posts above to add the Job-scam shield, or write your own rule.`
+              : html`Compile a rule above${host.install ? ", or install one by its code" : ""}.`}
+          </p>`}
     <ul class="list">
       ${s.cantrips.map((c) => {
         const p = c.programs[host.target];
@@ -723,12 +954,14 @@ export function mountApp(root: HTMLElement, host: Host) {
       html`<div class="app ${host.kind}">
         ${header()} ${banners()}
         <main>
-          ${s.compile ? compileTheatre(s.compile) : c ? detail(c) : html`${composer()} ${pagePanel()} ${library()}`}
+          ${s.compile ? compileTheatre(s.compile) : c ? detail(c) : html`${hero() ? board() : nothing} ${composer()} ${pagePanel()} ${library()}`}
         </main>
         <footer class="small muted">
           ${host.simulated
             ? "Simulated walkthrough: no model runs on this page."
-            : "Compiled in the cloud by Gemini, run on your device, all through Firebase AI Logic."}
+            : host.hybrid
+              ? "Compiled in the cloud by Gemini. Run on your device by Gemini Nano, or in the cloud when a browser has none, and every result says which. All through Firebase AI Logic."
+              : "Compiled in the cloud by Gemini, run on your device, all through Firebase AI Logic."}
         </footer>
         ${s.toast ? html`<div class="toast" role="status">${s.toast}</div>` : nothing}
       </div>`,
@@ -743,10 +976,11 @@ export function mountApp(root: HTMLElement, host: Host) {
     .load()
     .then((list) => {
       s.cantrips = list;
+      s.loaded = true;
       draw();
       if (s.importCode) install();
     })
-    .catch(() => toast("Couldn't load your cantrips."));
+    .catch(() => ((s.loaded = true), toast("Couldn't load your cantrips.")));
   host.onSelection?.((text) => {
     const active = s.cantrips.find((c) => c.enabled && c.programs[host.target]);
     if (!active) return toast("Compile a cantrip first, then send text to it.");

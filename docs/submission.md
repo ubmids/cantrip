@@ -28,6 +28,8 @@ You type a rule in plain English, like "Warn me when a job post is really commis
 4. A third of the tests are held back from the repair loop, so the final "unseen tests" score is honest.
 5. From then on, the program runs on Gemini Nano in Chrome on every page you read. Posts, cards and emails get a badge with the deciding words highlighted. There's no cloud call and no cost, it works offline, and the page text never leaves your machine.
 
+The hosted app opens on a ready **Job-scam shield**: the commission-only program from a real compile on Gemini Nano, and five sample job posts. One click checks them, and you can paste any post of your own. If your browser has no Gemini Nano, Firebase AI Logic's hybrid mode runs those checks on Gemini in the cloud instead. The app says so before you press the button, allows 15 cloud checks per browser session, and marks every result "ran in the cloud: no on-device model here" or "ran on device".
+
 Mark a verdict wrong and it becomes a new test, and Cantrip recompiles on your device. You can share a rule by a 7-character code. The repo also holds a SwiftUI iPhone app written to port a shared program to Apple's on-device Foundation Model. It builds for the iOS Simulator but has never run on a phone, so this submission is judged on the web app and the Chrome extension only.
 
 ## How we built it
@@ -36,13 +38,14 @@ Every model call goes through Firebase AI Logic.
 
 - **Cloud compiler:** `getGenerativeModel` with `InferenceMode.ONLY_IN_CLOUD` and a JSON `responseSchema`. It only ever sees your rule and synthetic test texts.
 - **Device runtime:** `InferenceMode.ONLY_ON_DEVICE` with `responseConstraint` for structured answers, and `initializeDeviceModel()` for the one-time download. It fails closed, so page text is never silently sent to the cloud.
+- **Hybrid fallback, kept narrow:** in the web app, a ready program can run with `InferenceMode.PREFER_ON_DEVICE`: Gemini Nano when Chrome has it, `gemini-3.5-flash-lite` in the cloud when it doesn't. Only for text you pick or paste, announced before the run, and capped per session. Compiling stays on the device, because a program must be tested on the model that will run it, and the extension never sends a page to the cloud.
 - **Where it ran:** every verdict shows `response.inferenceSource`, so you can see the split.
 - **iPhone (not run yet):** the code uses the Firebase AI Logic iOS SDK with `FirebaseAI.SystemLanguageModel.default` and a fresh session per check. It builds for the Simulator only.
 - **Firebase around it:**
   - App Check
   - anonymous Auth
   - Firestore for sharing, with rules that cap size and lock edits to the author
-  - Remote Config for the compiler model and round budget
+  - Remote Config for the compiler model, the round budget, the cloud fallback model and its per-session cap
   - Hosting for the web app
 - **Surfaces:**
   - a web app
@@ -91,8 +94,9 @@ Firebase AI Logic, Gemini, Gemini Nano, Firebase App Check, Firebase Authenticat
 ## How to test it
 
 - **Fastest:** the video shows the full loop on real hardware.
-- **Hosted app:** https://sixth-trainer-388221.web.app in desktop Chrome 148 or later with Gemini Nano (about 22 GB of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM). Press **Download the model** once, pick **Commission-only jobs**, press **Compile**, then **Try it** on the examples. A compile takes about 1 to 3 minutes.
-- **No Gemini Nano on your machine?** https://sixth-trainer-388221.web.app/?preview is the same interface with scripted answers. It says so on every screen, and no model runs in it.
+- **One click, any computer:** open https://sixth-trainer-388221.web.app and press **Check these 5 posts**. The Job-scam shield checks five sample job posts. Without Gemini Nano the checks run on Gemini in the cloud through Firebase AI Logic's hybrid mode, and each result says so (15 per browser session). **Paste your own post** checks any text.
+- **The full loop, with Gemini Nano:** desktop Chrome 148 or later (about 22 GB of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM). Press **Download the model** once, pick **Commission-only jobs** under "Your own rule", press **Compile**, then **Try it** on the examples. A compile takes about 1 to 3 minutes, and every check then runs on your device.
+- **See a compile without Gemini Nano:** https://sixth-trainer-388221.web.app/?preview is the compile interface with scripted answers. It says so on every screen, and no model runs in it.
 - **Code without any keys:** `npm install && npm test` runs the compiler loop, the page splitter and the page badges against fake models.
 - **The extension** needs its own Firebase project, because its App Check debug token can't be published. The README's "Run it" section has the steps.
 
@@ -151,4 +155,4 @@ The contest FAQ says judges may score from the video alone, and asks for who it'
 Tips:
 - Keep the take honest. If a round fails, leave it in, because the repair is the point.
 - Put no third-party logos on screen. The demo pages use made-up companies for this reason.
-- If the extension misbehaves on the day, record the cold open in the web app instead: **Try it** on the Brand Ambassador example shows the same verdict, highlight and "ran on this device" line.
+- If the extension misbehaves on the day, record the cold open on the hosted app's own job board instead: **Check these 5 posts** with Gemini Nano on shows badges landing, highlights and "ran on device" on each card.

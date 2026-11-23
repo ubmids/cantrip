@@ -8,7 +8,8 @@
 import { initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { CustomProvider, initializeAppCheck, ReCaptchaEnterpriseProvider, ReCaptchaV3Provider } from "firebase/app-check";
 import { fetchAndActivate, getRemoteConfig, getValue } from "firebase/remote-config";
-import { DEFAULT_COMPILER_MODEL } from "./ai";
+import { CLOUD_CHECKS_PER_SESSION } from "../core/budget";
+import { DEFAULT_CLOUD_CHECK_MODEL, DEFAULT_COMPILER_MODEL } from "./ai";
 import { chooseAppCheck, type AppCheckEnv } from "./appcheck";
 
 export interface CantripEnv extends AppCheckEnv {
@@ -61,20 +62,40 @@ export function startFirebase(env: CantripEnv, host: "web" | "extension" = "web"
 export interface Tuning {
   compilerModel: string;
   maxRounds: number;
+  /** The cloud model a browser without Gemini Nano runs ready cantrips on. */
+  cloudCheckModel: string;
+  /** Cloud runs allowed per browser session. 0 turns the cloud fallback off. */
+  cloudChecks: number;
 }
 
-/** Compiler settings live in Remote Config, so the model can change without shipping a new build. */
+/**
+ * Compiler and fallback settings live in Remote Config, so the model or the cap can change
+ * without shipping a new build. Parameters that are not set in the console use these defaults.
+ */
 export async function loadTuning(app: FirebaseApp): Promise<Tuning> {
-  const fallback: Tuning = { compilerModel: DEFAULT_COMPILER_MODEL, maxRounds: 4 };
+  const fallback: Tuning = {
+    compilerModel: DEFAULT_COMPILER_MODEL,
+    maxRounds: 4,
+    cloudCheckModel: DEFAULT_CLOUD_CHECK_MODEL,
+    cloudChecks: CLOUD_CHECKS_PER_SESSION,
+  };
   try {
     const rc = getRemoteConfig(app);
     rc.settings.minimumFetchIntervalMillis = 60 * 60 * 1000;
-    rc.defaultConfig = { compiler_model: fallback.compilerModel, max_rounds: fallback.maxRounds };
+    rc.defaultConfig = {
+      compiler_model: fallback.compilerModel,
+      max_rounds: fallback.maxRounds,
+      cloud_check_model: fallback.cloudCheckModel,
+      cloud_checks_per_session: fallback.cloudChecks,
+    };
     await Promise.race([fetchAndActivate(rc), new Promise((r) => setTimeout(r, 2500))]);
     const rounds = getValue(rc, "max_rounds").asNumber();
+    const checks = getValue(rc, "cloud_checks_per_session").asNumber();
     return {
       compilerModel: getValue(rc, "compiler_model").asString() || fallback.compilerModel,
       maxRounds: rounds >= 1 && rounds <= 6 ? rounds : fallback.maxRounds,
+      cloudCheckModel: getValue(rc, "cloud_check_model").asString() || fallback.cloudCheckModel,
+      cloudChecks: checks >= 0 && checks <= 50 ? Math.floor(checks) : fallback.cloudChecks,
     };
   } catch {
     return fallback;
