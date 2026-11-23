@@ -44,6 +44,12 @@ describe("friendlyError", () => {
     expect(friendlyError(undefined)).toBe("Something went wrong.");
   });
 
+  it("leaves request URLs out of the message, so it fits on a phone", () => {
+    const m = friendlyError(new Error("AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/x/models/y:generateContent: [429 ] quota"));
+    expect(m).toMatch(/busy or out of free quota/);
+    expect(m).not.toContain("https://");
+  });
+
   it("keeps the original message short", () => {
     const m = friendlyError(new Error("Failed to fetch " + "x".repeat(500)));
     expect(m.length).toBeLessThan(300);

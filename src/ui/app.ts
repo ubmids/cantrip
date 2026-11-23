@@ -41,6 +41,8 @@ interface BoardRun {
   running: boolean;
   /** Why the run stopped early, when it did. */
   stopped?: string;
+  /** It stopped on an error rather than on the session's cap. */
+  failed?: boolean;
 }
 
 /** Where the next check of a ready cantrip would run, or why it can't. */
@@ -351,8 +353,10 @@ export function mountApp(root: HTMLElement, host: Host) {
         break;
       }
       const out = await check(shield, `${BOARD_POSTS[i].title}. ${BOARD_POSTS[i].body}`);
-      if ("limit" in out) {
+      if ("error" in out) {
+        // The same cause (App Check, quota, the network) would fail every post, and spend a cloud check each time.
         s.board.stopped = out.error;
+        s.board.failed = !out.limit;
         break;
       }
       s.board.results[i] = out;
@@ -601,7 +605,7 @@ export function mountApp(root: HTMLElement, host: Host) {
 
   const board = () => {
     const b = s.board;
-    const done = b ? b.results.filter(Boolean).length : 0;
+    const done = b ? b.results.filter((x) => x && "verdict" in x).length : 0;
     const flagged = b ? b.results.filter((x) => x && "verdict" in x && x.verdict.flagged).length : 0;
     const r = route();
     return html`<section class="hero">
@@ -625,13 +629,20 @@ export function mountApp(root: HTMLElement, host: Host) {
             </button>
           </div>
         </div>
-        ${b && !b.running
+        ${b && !b.running && done
           ? html`<p class="summary" role="status">
               <b class=${flagged ? "flag" : "device"}>${flagged} of ${done} flagged</b>
               ${done < BOARD_POSTS.length ? html`<span class="muted">· ${BOARD_POSTS.length - done} not checked</span>` : nothing}
             </p>`
           : nothing}
-        ${b?.stopped ? html`<p class="where limit">${b.stopped}</p>` : routeNote(BOARD_POSTS.length)}
+        ${b?.stopped
+          ? b.failed
+            ? html`<div class="error-box" role="alert">
+                <p>${b.stopped}</p>
+                ${r.ok ? html`<button class="btn small" @click=${checkBoard}>Try again</button>` : nothing}
+              </div>`
+            : html`<p class="where limit">${b.stopped}</p>`
+          : routeNote(BOARD_POSTS.length)}
         <ol class="board" aria-live="polite">
           ${BOARD_POSTS.map((_, i) => boardCard(i))}
         </ol>

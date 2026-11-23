@@ -57,7 +57,7 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
-body { font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+body { font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; overflow-wrap: break-word; }
 button, input, textarea { font: inherit; color: inherit; }
 code { font-family: var(--mono); font-size: 0.85em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; word-break: break-all; }
 
@@ -243,7 +243,8 @@ textarea:focus-visible, input:focus-visible { outline: none; }
 
 /* States */
 .error-box { margin-top: 12px; background: var(--flag-soft); border-radius: 12px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
-.error-box p { margin: 0; font-size: 14px; }
+.error-box p { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.post-verdict, .where, .flag { overflow-wrap: anywhere; }
 .error-box .btn { flex: none; }
 .provenance { margin: -4px 0 14px; color: var(--muted); padding-left: 10px; border-left: 2px solid var(--device); }
 .empty { margin: 0 0 6px; color: var(--muted); font-size: 14px; }

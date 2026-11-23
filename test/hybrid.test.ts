@@ -203,6 +203,31 @@ describe("hybrid runs in the web app", () => {
     expect(flat(root.querySelector(".result .correct"))).toContain("With Gemini Nano you can correct it");
   });
 
+  it("stops the board on the first failure, says why in words, and spends one check, not five", async () => {
+    let calls = 0;
+    const failing: JsonModel = {
+      async generateJson() {
+        calls++;
+        throw new Error(
+          "AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/p/models/gemini-3.5-flash-lite:generateContent: [401 ] Firebase App Check token is invalid. (AI/fetch-error)",
+        );
+      },
+    };
+    const budget = cloudBudget(5, memoryStore());
+    const { root } = mount({ device: "unsupported", hybrid: failing, budget });
+    await vi.waitFor(() => expect(button(root, /Check these 5 posts/)?.disabled).toBe(false));
+    button(root, /Check these 5 posts/)!.click();
+    await vi.waitFor(() => expect(root.querySelector(".shield .error-box")).not.toBeNull());
+
+    expect(calls).toBe(1);
+    expect(budget.left()).toBe(4);
+    const msg = flat(root.querySelector(".shield .error-box"));
+    expect(msg).toMatch(/^Firebase App Check could not confirm this browser/);
+    expect(msg).not.toContain("https://");
+    expect(root.querySelector(".summary")).toBeNull();
+    expect(button(root, /Try again/)).toBeDefined();
+  });
+
   it("never sends text to the cloud when the host offers no fallback", async () => {
     const { root } = mount({ device: "unsupported" });
     await vi.waitFor(() => expect(flat(root.querySelector(".where"))).toContain("no on-device model to run it"));

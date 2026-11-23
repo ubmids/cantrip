@@ -46,6 +46,7 @@ function errorText(err: unknown): string {
 }
 
 function shorten(s: string, max = 160): string {
-  const flat = s.replace(/\s+/g, " ").trim();
+  // Request URLs say nothing a person can act on, and they are long enough to break a phone layout.
+  const flat = s.replace(/https?:\/\/\S+/g, "…").replace(/\s+/g, " ").trim();
   return flat.length <= max ? flat : flat.slice(0, max - 1) + "…";
 }
