@@ -1,13 +1,15 @@
 # Cantrip for iPhone
 
-The second platform for #BuildHybridAI. Install a cantrip someone compiled in Chrome by its
-share code, then press **Compile for this iPhone**: Gemini (cloud) ports the program from
-Gemini Nano to Apple's on-device Foundation Model, runs every test on the phone through
-Firebase AI Logic, repairs what fails and reports the unseen-test score. Checks then run on
-the phone with nothing sent.
+**Never run on a phone.** This app builds for the iOS Simulator but has not run on an iPhone,
+so nothing here is a measured result and no iPhone result is claimed.
+
+What it is written to do: install a cantrip someone compiled in Chrome by its share code, then,
+on **Compile for this iPhone**, have Gemini (cloud) port the program from Gemini Nano to Apple's
+on-device Foundation Model, run every test on the phone through Firebase AI Logic, repair what
+fails and report the unseen-test score. Checks would then run on the phone with nothing sent.
 
 It builds: `xcodebuild` for the iOS Simulator succeeds with Xcode 27.1 and firebase-ios-sdk 12.13+.
-It has not run on a phone yet, because that needs the Firebase steps below.
+Running it on a phone needs the Firebase steps below.
 
 ## Build
 
@@ -25,4 +27,4 @@ It has not run on a phone yet, because that needs the Firebase steps below.
 `Cantrip/Compiler.swift`: `FirebaseAI.firebaseAI(backend: .googleAI())`, the cloud compiler with
 `generativeModel(modelName:)`, and the device runtime with
 `generativeModelSession(model: FirebaseAI.SystemLanguageModel.default)`, a fresh session per
-check. `rawResponse.modelVersion` shows whether an answer came from the phone.
+check. The code reads `rawResponse.modelVersion` to tell whether an answer came from the phone.

@@ -8,33 +8,38 @@ import type { Cantrip } from "../core/types";
 import { mountApp } from "../ui/app";
 import type { Host } from "../ui/host";
 
-const KEY = "cantrip.v1";
+function storeAt(key: string) {
+  return {
+    async load(): Promise<Cantrip[]> {
+      try {
+        return JSON.parse(localStorage.getItem(key) ?? "[]");
+      } catch {
+        return [];
+      }
+    },
+    async save(list: Cantrip[]) {
+      try {
+        localStorage.setItem(key, JSON.stringify(list));
+      } catch {
+        // Private windows can refuse storage; the session still works.
+      }
+    },
+  };
+}
 
-const localStore = {
-  async load(): Promise<Cantrip[]> {
-    try {
-      return JSON.parse(localStorage.getItem(KEY) ?? "[]");
-    } catch {
-      return [];
-    }
-  },
-  async save(list: Cantrip[]) {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(list));
-    } catch {
-      // Private windows can refuse storage; the session still works.
-    }
-  },
-};
+const localStore = storeAt("cantrip.v1");
+// Simulated cantrips are kept apart, so a walkthrough never leaves scripted programs in the real library.
+const previewStore = storeAt("cantrip.preview.v1");
 
 const newId = () => crypto.randomUUID();
 
 async function boot() {
   const root = document.getElementById("app")!;
 
-  if (import.meta.env.VITE_SIMULATE === "1") {
+  // ?preview on the hosted site, or a VITE_SIMULATE build: the interface with scripted models, clearly labelled.
+  if (import.meta.env.VITE_SIMULATE === "1" || new URLSearchParams(location.search).has("preview")) {
     const { simulatedHost } = await import("./simulated");
-    mountApp(root, { ...simulatedHost(), ...localStore });
+    mountApp(root, { ...simulatedHost(), ...previewStore });
     return;
   }
 

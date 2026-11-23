@@ -6,6 +6,7 @@ import type { Cantrip, CompiledProgram, Program, Round, Spec, TestCase, TestResu
 import type { DeviceState } from "../firebase/ai";
 import type { Host, PageScan } from "./host";
 import { copyWithoutBlocking } from "./clipboard";
+import { friendlyError } from "../core/errors";
 import { SAMPLES } from "./samples";
 
 interface LiveRound {
@@ -97,7 +98,7 @@ export function mountApp(root: HTMLElement, host: Host) {
         draw();
       });
     } catch (err) {
-      toast(`The on-device model didn't start: ${(err as Error).message}`);
+      toast(`The on-device model didn't start: ${friendlyError(err)}`);
     }
     s.downloadPct = null;
     await refreshDevice();
@@ -229,9 +230,8 @@ export function mountApp(root: HTMLElement, host: Host) {
 
   function failCompile(err: unknown) {
     if (!s.compile) return;
-    const e = err as Error;
     s.compile.phase = "error";
-    s.compile.error = e?.name === "AbortError" ? "Stopped." : e?.message || String(err);
+    s.compile.error = friendlyError(err);
   }
 
   function closeCompile(openResult: boolean) {
@@ -268,7 +268,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       const v = await runProgram(host.device, c.spec, compiled.program, s.tryText);
       s.tryResult = { ...v, text: clip(s.tryText) };
     } catch (err) {
-      s.tryError = (err as Error).message;
+      s.tryError = friendlyError(err);
     }
     s.tryBusy = false;
     draw();
@@ -296,7 +296,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       const copied = await copyWithoutBlocking(() => navigator.clipboard?.writeText(host.kind === "web" ? link : code));
       toast(copied ? `Shared as ${code}. Copied ${host.kind === "web" ? "the link" : "the code"}.` : `Shared as ${code}.`);
     } catch (err) {
-      toast(`Couldn't share: ${(err as Error).message}`);
+      toast(`Couldn't share: ${friendlyError(err)}`);
     }
   }
 
@@ -311,7 +311,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       openCantrip(c.id);
       toast(c.programs[host.target] ? "Installed and ready on this device." : "Installed. Compile it for this device to use it.");
     } catch (err) {
-      toast(`Couldn't install: ${(err as Error).message}`);
+      toast(`Couldn't install: ${friendlyError(err)}`);
     }
   }
 
@@ -339,7 +339,7 @@ export function mountApp(root: HTMLElement, host: Host) {
         draw();
       });
     } catch (err) {
-      toast((err as Error).message);
+      toast(friendlyError(err));
     }
   }
 
@@ -349,6 +349,7 @@ export function mountApp(root: HTMLElement, host: Host) {
 
   const devicePill = () => {
     const d = s.device;
+    if (host.simulated) return html`<span class="pill muted"><i class="dot"></i>Simulated models</span>`;
     if (s.downloadPct != null)
       return html`<span class="pill device">Downloading model ${pct(s.downloadPct)}</span>`;
     const label: Record<string, string> = {
@@ -371,12 +372,23 @@ export function mountApp(root: HTMLElement, host: Host) {
         <p>Cantrip runs its programs on your device. Chrome needs to download Gemini Nano once.</p>
         <button class="btn" @click=${downloadModel}>Download the model</button>
       </div>`;
+    const walkthrough =
+      host.kind === "web" && !host.simulated
+        ? html`<p class="small">
+            No Gemini Nano here? <a href="?preview">See a simulated walkthrough of the interface</a> (no model runs in
+            it), or watch the demo video linked in the README.
+          </p>`
+        : nothing;
     return html`<div class="notice">
       <p>
-        Programs run on Gemini Nano inside desktop Chrome, and this browser doesn't offer it. Use an up-to-date
-        desktop Chrome (148 or later) on a computer with about 22 GB of free disk space and 16 GB of memory.
+        ${s.device === "unavailable"
+          ? html`Chrome offers Gemini Nano here but says it can't run on this computer. It needs about 22 GB of free disk
+              space and either 16 GB of memory or a GPU with more than 4 GB of VRAM.`
+          : html`Programs run on Gemini Nano inside desktop Chrome, and this browser doesn't offer it. Use an up-to-date
+              desktop Chrome (148 or later) on a computer with about 22 GB of free disk space and 16 GB of memory.`}
         <code>chrome://on-device-internals</code> shows what Chrome is missing.
       </p>
+      ${walkthrough}
     </div>`;
   };
 
@@ -388,7 +400,13 @@ export function mountApp(root: HTMLElement, host: Host) {
   </header>`;
 
   const banners = () => html`${host.simulated
-      ? html`<div class="banner">Preview build: the models here are simulated. Connect Firebase to run for real.</div>`
+      ? html`<div class="banner sim" role="note">
+          <b>Simulated walkthrough.</b> No AI model runs here: the cloud and device answers are scripted, to show the
+          interface only, and only the commission-only sample is scripted. Real results need Gemini Nano in desktop Chrome.
+          ${host.kind === "web" && new URLSearchParams(location.search).has("preview")
+            ? html`<a href=${location.pathname}>Leave the walkthrough</a>`
+            : nothing}
+        </div>`
       : nothing}
     ${host.setupProblem ? html`<div class="banner warn">${host.setupProblem}</div>` : nothing}`;
 
@@ -417,7 +435,7 @@ export function mountApp(root: HTMLElement, host: Host) {
         }}
       ></textarea>
       <div class="chips">
-        ${SAMPLES.map(
+        ${(host.simulated ? SAMPLES.slice(0, 1) : SAMPLES).map(
           (x) => html`<button type="button" class="chip" @click=${() => ((s.draft = x.intent), draw())}>${x.chip}</button>`,
         )}
       </div>
@@ -443,6 +461,17 @@ export function mountApp(root: HTMLElement, host: Host) {
   };
 
   const phaseLine = (v: CompileView) => {
+    if (host.simulated && v.phase !== "error") {
+      const sim: Record<Exclude<CompileView["phase"], "error">, string> = {
+        designing: "Simulated: a scripted program and tests, no Gemini call…",
+        porting: "Simulated: a scripted port, no Gemini call…",
+        testing: "Simulated: running the scripted tests, no model…",
+        repairing: "Simulated: a scripted repair, no Gemini call…",
+        holdout: "Simulated: scripted unseen tests, no model…",
+        done: "Simulated: compiled with scripted answers.",
+      };
+      return html`<span class="muted">${sim[v.phase]}</span>`;
+    }
     const lines: Record<CompileView["phase"], TemplateResult> = {
       designing: html`<span class="cloud">☁ Gemini is writing the program and its tests…</span>`,
       porting: html`<span class="cloud">☁ Gemini is adapting the program for ${TARGET_NAMES[host.target]}…</span>`,
@@ -475,8 +504,8 @@ export function mountApp(root: HTMLElement, host: Host) {
           </div>`
         : nothing}
       <div class="meters">
-        <div class="meter cloud"><b>${v.cloudCalls}</b><span>cloud ${v.cloudCalls === 1 ? "call" : "calls"} to compile</span></div>
-        <div class="meter device"><b>${v.deviceRuns}</b><span>test runs on your device</span></div>
+        <div class="meter cloud"><b>${v.cloudCalls}</b><span>${host.simulated ? "scripted " : ""}cloud ${v.cloudCalls === 1 ? "call" : "calls"}${host.simulated ? "" : " to compile"}</span></div>
+        <div class="meter device"><b>${v.deviceRuns}</b><span>${host.simulated ? "scripted device runs" : "test runs on your device"}</span></div>
         <div class="meter"><b>${pct(best || null)}</b><span>best so far</span></div>
       </div>
       <p class="phase">${v.phase === "done" ? nothing : html`<i class="spinner"></i>`}${phaseLine(v)}</p>
@@ -502,16 +531,23 @@ export function mountApp(root: HTMLElement, host: Host) {
       </ol>
       ${v.phase === "done" && compiled
         ? html`<div class="verdict-banner">
-            <p>
-              <b>Ready.</b> Passed ${pct(compiled.tuneAccuracy)} of its tuning tests and
-              ${compiled.holdoutAccuracy == null ? "had no unseen tests" : html`${pct(compiled.holdoutAccuracy)} of tests it never trained on`}.
-              From now on every run happens on your device: no cloud call, no cost, works offline.
-            </p>
+            ${host.simulated
+              ? html`<p><b>Simulated.</b> These scores are scripted and no model ran. A real compile would run every test on your device.</p>`
+              : html`<p>
+                  <b>Ready.</b> Passed ${pct(compiled.tuneAccuracy)} of its tuning tests and
+                  ${compiled.holdoutAccuracy == null ? "had no unseen tests" : html`${pct(compiled.holdoutAccuracy)} of tests it never trained on`}.
+                  From now on every run happens on your device: no cloud call, no cost, works offline.
+                </p>`}
             <button class="btn primary" @click=${() => closeCompile(true)}>Try it</button>
           </div>`
         : nothing}
       ${v.phase === "error"
-        ? html`<div class="row end"><button class="btn" @click=${() => closeCompile(false)}>Back</button></div>`
+        ? html`<div class="row end">
+            <button class="btn ghost" @click=${() => closeCompile(false)}>Back</button>
+            ${v.mode === "new"
+              ? html`<button class="btn primary" @click=${() => ((s.compile = null), startCompile(v.intent))}>Try again</button>`
+              : nothing}
+          </div>`
         : nothing}
     </section>`;
   };
@@ -524,7 +560,9 @@ export function mountApp(root: HTMLElement, host: Host) {
   };
 
   const sourceBadge = (v: Verdict) =>
-    v.source === "in_cloud"
+    host.simulated
+      ? html`<span class="src">simulated · no model ran</span>`
+      : v.source === "in_cloud"
       ? html`<span class="src cloud">☁ ran in the cloud · ${v.ms} ms</span>`
       : html`<span class="src device">▣ ran on this device · ${v.ms} ms · $0</span>`;
 
@@ -688,7 +726,9 @@ export function mountApp(root: HTMLElement, host: Host) {
           ${s.compile ? compileTheatre(s.compile) : c ? detail(c) : html`${composer()} ${pagePanel()} ${library()}`}
         </main>
         <footer class="small muted">
-          Compiled in the cloud by Gemini, run on your device, all through Firebase AI Logic.
+          ${host.simulated
+            ? "Simulated walkthrough: no model runs on this page."
+            : "Compiled in the cloud by Gemini, run on your device, all through Firebase AI Logic."}
         </footer>
         ${s.toast ? html`<div class="toast" role="status">${s.toast}</div>` : nothing}
       </div>`,

@@ -14,9 +14,26 @@ const MAX = 4000;
 const SKIP = "script, style, noscript, svg, nav, header, footer, form, button, select, textarea, [aria-hidden='true'], [data-cantrip-ui]";
 const CANDIDATES = "article, [role='article'], li, section, div, td, blockquote, p";
 
+const flat = (s: string) => s.replace(/\s+/g, " ").trim();
+const rendered = (el: Element) => flat((el as HTMLElement).innerText ?? el.textContent ?? "");
+
 function textOf(el: Element): string {
-  const t = (el as HTMLElement).innerText ?? el.textContent ?? "";
-  return t.replace(/\s+/g, " ").trim();
+  let t = rendered(el);
+  // Cantrip's own badges must never become part of what the model reads. Their
+  // text is taken out of the rendered text, so a block reads the same with or
+  // without badges. If that ever fails, read a copy with the badges removed.
+  for (const ui of Array.from(el.querySelectorAll("[data-cantrip-ui]"))) {
+    const u = rendered(ui);
+    if (!u) continue;
+    const at = t.lastIndexOf(u);
+    if (at < 0) {
+      const copy = el.cloneNode(true) as Element;
+      copy.querySelectorAll("[data-cantrip-ui]").forEach((n) => n.remove());
+      return flat(copy.textContent ?? "");
+    }
+    t = flat(`${t.slice(0, at)} ${t.slice(at + u.length)}`);
+  }
+  return t;
 }
 
 /**

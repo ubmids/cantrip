@@ -9,15 +9,22 @@ Devpost requires four things: a working demo app, a public repo, a demo video an
 | Working demo app | Done. Live at https://sixth-trainer-388221.web.app (web app; the Chrome extension is in `dist/extension`). |
 | Text description | Done. `docs/submission.md`, web-only, real numbers only. Paste section by section into the Devpost form. |
 | Public repo with a licence | Done. Apache 2.0, public at https://github.com/ubmids/cantrip |
-| Demo video | Not recorded. Script is at the bottom of `docs/submission.md` (about 2 min 50 s). |
+| Demo video | Not recorded. Script is at the bottom of `docs/submission.md` (about 2 min 50 s), opening on the result. |
 
 ## What only you can do
 
 1. **Join the hackathon** on Devpost: https://firebasehybridaihackathon.devpost.com (press "Join hackathon").
 2. The repo is public (done 23 Nov).
-3. **Load the extension once** for the demo: `chrome://extensions`, Developer mode on, Load unpacked, pick `~/Desktop/cantrip/dist/extension`. Chrome doesn't let this be automated.
-4. **Record the video** (3 minutes maximum; only the first 3 are judged). It must be in English, show the app working in Chrome, and be public on YouTube. Before recording, compile once so Gemini Nano is already downloaded. If a round fails on camera, keep it: the repair is the point.
-5. **Submit on Devpost:** paste the text, add the hosted URL, the repo URL and the YouTube link, then press Submit.
+3. **Deploy this branch's web app** after merging, so the hosted site has the `?preview` walkthrough and the plain-words error messages the README and the Devpost text now point to: `VITE_APPCHECK_DEBUG_TOKEN= npm run build`, check `grep -r "$YOUR_TOKEN" dist/web` finds nothing, then `firebase deploy --only hosting`. Until then `?preview` just opens the normal app.
+4. **Load the extension once** for the demo: `chrome://extensions`, Developer mode on, Load unpacked, pick `~/Desktop/cantrip/dist/extension`. Chrome doesn't let this be automated.
+5. **Record the video** (3 minutes maximum; only the first 3 are judged). It must be in English, show the app working in Chrome, and be public on YouTube. Before recording, compile once so Gemini Nano is already downloaded. If a round fails on camera, keep it: the repair is the point.
+6. **Put the YouTube link in two places:** the Devpost form and the README's "Try it" table (the Video row), then push before the deadline.
+7. **Submit on Devpost:** choose the **Web (Chrome)** platform, paste the text including "How to test it", add the hosted URL, the repo URL and the YouTube link, then press Submit.
+
+## Worth checking before judging (10 to 16 Dec)
+
+- The hosted site runs on the Spark plan and the free Gemini tier. If several judges compile at once they may hit the free rate limit. The app now says so in words and the compiler falls back to the lighter model, but it is your call whether that is enough.
+- Firebase App Check turns away browsers that reCAPTCHA scores as automated, and the SDK then waits a day before trying again in that browser. A judge in a normal Chrome window should be fine.
 
 ## After submitting
 
