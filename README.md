@@ -1,33 +1,81 @@
 # Cantrip
 
-**Teach your browser a rule. Gemini compiles it in the cloud. Your device runs it, for free, on every page.**
+**Say what to watch for. Gemini in the cloud writes and tests a program for Gemini Nano, which then checks every page you read, free and on your device.**
 
-You type a rule in plain English: *"Warn me when a job post is really commission-only."*
+Job seekers scroll past dozens of posts a day, and some of them hide that there is no pay, or
+that you will be the one paying. People reported losing $501 million to job scams in 2024,
+[up from $90 million in 2020](https://www.ftc.gov/news-events/news/press-releases/2025/03/new-ftc-data-show-big-jump-reported-losses-fraud-125-billion-2024)
+(FTC). The warning signs are in the text. An on-device model could read every post for free
+without sending your job search anywhere, but small models are fragile, and nobody writes good
+prompts for them.
+
+So you type one sentence: *"Warn me when a job post is really commission-only."*
 Gemini in the cloud writes a tiny program for the model on your device, writes tests for it,
 runs those tests **on your device**, reads what failed, rewrites the program, and repeats.
 When it passes, the program runs on Gemini Nano on every page you read: no cloud call,
 no cost, works offline, and the text never leaves your machine.
 
 Built for [#BuildHybridAI](https://firebasehybridaihackathon.devpost.com/) with Firebase AI Logic.
+Platform: Web (Chrome), as a web app and a Chrome extension.
 
 ## Try it
 
-Draft. The video is not recorded yet.
+| Way | What you need | What you see |
+|---|---|---|
+| **Video** | Nothing | The whole loop on real hardware. Link added on submission day. |
+| **Hosted app:** https://sixth-trainer-388221.web.app | Desktop Chrome 148+ with Gemini Nano (see below) | Compile a rule, watch every test run on your device, try it on any text, correct it, share it by code. |
+| **Simulated walkthrough:** https://sixth-trainer-388221.web.app/?preview | Any browser | The interface with scripted answers and a banner saying so. No model runs in it. For seeing the flow when your machine has no Gemini Nano. |
+| **From source, no keys:** `npm install && npm test` | Node 22 | 50+ tests of the compiler loop, the page splitter and the badges, with fake models. |
+| **Chrome extension** | Your own Firebase project (below) | Reads the open tab and badges what your rules flag. Its App Check debug token can't be published, so there is no prebuilt download. |
 
-- **Hosted app:** https://sixth-trainer-388221.web.app. In a Chrome with Gemini Nano you can
-  compile and run cantrips there. In any other browser it loads, says what is missing, and
-  can still install a shared cantrip by code.
-- **Video:** to come.
-- **What you need for the web app and the extension:** an up-to-date desktop Chrome (148 or
-  later, no flags), about 22 GB of free disk space, and 16 GB of memory or a GPU with more
-  than 4 GB of VRAM. Chrome downloads Gemini Nano the first time you press
-  **Download the model**. Without the on-device model the site still loads and says what is
-  missing. It never quietly runs your text in the cloud.
-- **What you need for the iPhone app:** an iPhone with Apple Intelligence turned on (iOS 26
-  or later) and Xcode 26.2 or later. See `ios/README.md`.
-- **From source:** `npm install`, copy `.env.example` to `.env` and fill it in as described
-  under [Run it](#run-it), then `npm run dev` for the web app or `npm run build:extension`
-  and load `dist/extension` at `chrome://extensions` with Developer mode on.
+**Gemini Nano in Chrome:** an up-to-date desktop Chrome (148 or later, no flags), about 22 GB
+of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM. Chrome downloads
+the model once, the first time you press **Download the model** (about 4 GB, it took 28 minutes
+on our test laptop). Without the on-device model the site still loads and says what is
+missing. It never quietly runs your text in the cloud.
+
+## Results from real runs
+
+Every number below came from a real run on a MacBook with an M2 Pro and 16 GB of memory,
+Chrome 157 with no flags, Gemini Nano through Firebase AI Logic. Details, misses and all, are
+in [`docs/real-runs.md`](docs/real-runs.md).
+
+| Rule | Tests passed on the device, round by round | Unseen tests | Cloud calls | Device runs | Time |
+|---|---|---|---|---|---|
+| Commission-only jobs | 8/9, then 9/9 | 3/3 | 2 | 21 | 85.1 s |
+| Pressure-to-pay emails | 5/8, 7/8, 7/8, then 8/8 | 3/4 | 4 | 36 | 166.9 s |
+| Paid-for reviews | 7/8, 7/8, 7/8, then 8/8 | 4/4 | 4 | 36 | 183.7 s |
+| Data-selling terms | 9/9 on the first draft | 3/3 | 1 | 12 | 51.1 s |
+
+- All 105 test runs reported `on_device` as their source.
+- A device run took about 1.9 seconds (median). Running a compiled program made no network
+  request at all, on localhost and on the hosted site.
+- Gemini Nano is not deterministic: one borderline email got three different labels on three
+  runs, so a score can move by a test between runs.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+  subgraph Cloud["Cloud: Gemini via Firebase AI Logic (ONLY_IN_CLOUD)"]
+    D["Design: labels, system prompt,<br/>examples, 12 tests"]
+    R["Repair: read failures,<br/>rewrite the program"]
+  end
+  subgraph Device["Your device: Gemini Nano in Chrome (ONLY_ON_DEVICE)"]
+    T["Run tune tests"]
+    H["Run held-out tests once"]
+    P["Run the program on<br/>every block of every page"]
+  end
+  U(["Your rule, one sentence"]) --> D --> T
+  T -- "failures" --> R --> T
+  T -- "all pass, or out of rounds:<br/>keep the best program" --> H --> P
+  P --> B(["Badge and highlight<br/>on the page"])
+  FS[("Firestore:<br/>share by code")] -. "install elsewhere" .-> P
+```
+
+The cloud sees your rule and synthetic test texts. It never sees the pages you read. App Check
+guards every Gemini call, Remote Config picks the compiler model and round budget, and
+anonymous Auth plus Firestore rules let you publish a cantrip by a 7-character code.
 
 ## Why this is hybrid, and why it has to be
 
@@ -49,18 +97,8 @@ shows the idea works offline for developers. Cantrip does it live, for anyone, f
 
 ## How the compiler works
 
-```
-your rule ──► ☁ design: labels, system prompt, 3 examples, 12 tests
-                  │
-                  ▼
-            split tests: 2/3 tune · 1/3 holdout (never shown to the repair step)
-                  │
-          ┌──────►▼
-          │   ▣ run every tune test on Gemini Nano
-          │       │ all pass? ──────────────► ▣ run holdout tests once, report honestly
-          │       ▼ no
-          └── ☁ repair: read the failures, rewrite the program (best-so-far is kept)
-```
+The diagram above, in words. Tests are split per label: two thirds tune the program, one
+third is held out and never shown to the repair step.
 
 - **Honest accuracy.** A third of the tests are held out from the repair loop, so the
   "unseen tests" score is earned. Examples that copy a test are dropped for the same reason.
@@ -120,10 +158,10 @@ either a GPU with more than 4 GB of VRAM or 16 GB of RAM with 4 CPU cores.
 
 ```bash
 npm install
-npm test               # compiler, runtime and page segmentation tests
+npm test               # compiler, runtime, page splitter, badges and error messages
 npm run dev            # web app at http://localhost:5173
 npm run build:extension  # then load dist/extension at chrome://extensions (Developer mode)
-npm run preview:simulated  # the interface with simulated models, for design work only
+npm run preview:simulated  # the interface with scripted models, no Firebase needed
 ```
 
 Deploy the web app with `VITE_APPCHECK_DEBUG_TOKEN= npm run build && firebase deploy --only hosting`.
@@ -138,6 +176,18 @@ no DOM rewriting). Select any text and choose **Check with Cantrip** from the co
 `demo/jobs.html` and `demo/inbox.html` are sample pages with made-up job posts and emails, for
 trying **Read this page** without depending on a live site. With `npm run dev` running they
 are at `http://localhost:5173/demo/jobs.html` and `http://localhost:5173/demo/inbox.html`.
+
+If two cantrips flag the same block, their badges sit side by side. Cantrip's own badges are
+never read back into the model on the next pass.
+
+## What has and hasn't run on real hardware
+
+| Part | State |
+|---|---|
+| Web app: compile, run, correct, share, install (localhost and hosted) | Run on Gemini Nano in Chrome 157, 14 November. See `docs/real-runs.md`. |
+| Extension: page splitting, badges, highlights, clearing on a second read | Run in Chromium with the unpacked extension on the demo pages, 23 November, with scripted verdicts. |
+| Extension: side panel with Gemini Nano reading a live tab | Not run yet on Gemini Nano. |
+| iPhone app (`ios/`) | Builds for the Simulator. Never run on a phone, so no iPhone result is claimed. |
 
 ## Limits
 

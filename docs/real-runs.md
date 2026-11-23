@@ -86,5 +86,43 @@ The extension could not be loaded by automation (Chrome's extensions page needs 
 
 ## Not run yet
 
-- The Chrome extension itself, in a real browser: side panel, Read this page, badges and highlights, the right-click check, install by code.
+- The Chrome extension itself, in a real browser: side panel, Read this page, badges and highlights, the right-click check, install by code. (The page side was checked on 23 November, below.)
+- The iPhone app on a phone.
+
+# Checks, 23 November 2026
+
+## The extension's page side, in a real browser
+
+Chromium (Chrome for Testing 145, headless, driven by Playwright) loaded the unpacked
+extension from `dist/extension`. Chrome for Testing has no Gemini Nano, so the verdicts were
+scripted and sent to the page the same way the side panel sends them. What this checks is
+everything on the page side: splitting, badges, highlights and clearing.
+
+- `demo/jobs.html` gave 8 blocks, one per job card. `demo/inbox.html` gave 5 blocks, one per
+  email. Same as the splitter gave on 14 November.
+- Flagged cards got the red outline and a badge reading "commission only, on device", and the
+  quoted words were highlighted with the CSS Custom Highlight API. All three quotes were found
+  in the page text.
+- Bug found: when two cantrips flagged the same card, the second badge sat on top of the first
+  and hid it. Fixed: badges now share one row. Checked again in the same browser, with tests.
+- A second **Read this page** removed every badge before reading again.
+- The side panel page booted with the debug token, showed the device notice ("Chrome offers
+  Gemini Nano here but says it can't run on this computer") and the **Read this page** card.
+
+## The hosted site, from a headless browser
+
+- https://sixth-trainer-388221.web.app loaded in about 5 seconds, with no script errors. At
+  390 px wide there is no sideways scrolling.
+- Remote Config answered. Installing by a code that does not exist said "No cantrip has that
+  code.", so the Firestore read path works.
+- App Check refused the headless browser (HTTP 403 from the reCAPTCHA Enterprise exchange),
+  and the Firebase SDK then waits a day before trying again in that browser. That is expected
+  for an automated browser. It means compiling could not be checked from here, and that any
+  visitor App Check turns away gets the same wait. The app now explains this in words instead
+  of showing the SDK's error code.
+- The headless browser has no `LanguageModel`, so the device side could not be checked here.
+
+## Not run yet
+
+- The extension's side panel reading a live tab with Gemini Nano.
 - The iPhone app on a phone.

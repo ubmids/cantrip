@@ -4,13 +4,19 @@ The Devpost text and the demo script. Every `[[...]]` gets filled from a real ru
 
 ## Tagline
 
-Teach your browser a rule in one sentence. Gemini compiles it in the cloud, and your device runs it for free on every page.
+Say what to watch for. Gemini in the cloud writes and tests a program for Gemini Nano, which then checks every page you read, free and on your device.
 
 ## Inspiration
+
+A job seeker reads dozens of posts a day. Some hide that there is no pay at all, or that you will be the one paying for a "starter kit". People reported losing $501 million to job scams in 2024, up from $90 million in 2020 (FTC). The signs are in the text, but nobody reads every post, email and review with a lawyer's eye. And a job search, an inbox or a pile of reviews is exactly the text you don't want to send to a server just to be warned about it.
 
 On-device models are free, private and work offline. But they are small and fragile about prompting. Most people will never write a good prompt for Gemini Nano, and a prompt that works on one device's model often breaks on another. Big cloud models are the opposite: smart, but every call costs money and sends your text away.
 
 So we asked: what if the cloud never saw your data at all? It would do only the one thing small models can't do for themselves, which is write and debug their own instructions.
+
+## Who it's for
+
+People who read things that might be traps, and want a second pair of eyes that costs nothing and tells no one: job seekers sorting real roles from commission-only and pay-to-work posts, anyone whose inbox gets "pay now or lose access" emails, shoppers wading through reviews. Each of them has a different trap, so Cantrip lets them describe their own in one sentence instead of waiting for someone to build a detector for it.
 
 ## What it does
 
@@ -83,6 +89,14 @@ A big model watching a small model fail on real hardware is a much better prompt
 
 Firebase AI Logic, Gemini, Gemini Nano, Apple Foundation Models, Firebase App Check, Firebase Authentication, Cloud Firestore, Remote Config, Firebase Hosting, TypeScript, Vite, lit-html, Chrome Extensions (MV3), Swift, SwiftUI.
 
+## How to test it
+
+- **Fastest:** the video shows the full loop on real hardware.
+- **Hosted app:** https://sixth-trainer-388221.web.app in desktop Chrome 148 or later with Gemini Nano (about 22 GB of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM). Press **Download the model** once, pick **Commission-only jobs**, press **Compile**, then **Try it** on the examples. A compile takes about 1 to 3 minutes.
+- **No Gemini Nano on your machine?** https://sixth-trainer-388221.web.app/?preview is the same interface with scripted answers. It says so on every screen, and no model runs in it.
+- **Code without any keys:** `npm install && npm test` runs the compiler loop, the page splitter and the page badges against fake models.
+- **The extension** needs its own Firebase project, because its App Check debug token can't be published. The README's "Run it" section has the steps.
+
 ## Links
 
 - Hosted app: https://sixth-trainer-388221.web.app
@@ -91,39 +105,51 @@ Firebase AI Logic, Gemini, Gemini Nano, Apple Foundation Models, Firebase App Ch
 
 ## Demo script (about 2 minutes 50 seconds)
 
-**0:00 to 0:15, the hook.**
-- Screen: a job board in Chrome.
-- Voice: "Small AI models now run free and private on your laptop. The catch is they're fragile, and nobody writes good prompts for them. Cantrip lets the cloud write and debug the prompt, then gets out of the way."
+The contest FAQ says judges may score from the video alone, and asks for who it's for, the problem and how Firebase AI Logic makes it work in the first 30 seconds. So the video opens on the result, not on the setup.
 
-**0:15 to 0:35, the rule.**
-- Open the side panel, type "Warn me when a job post is really commission-only." and press Compile.
-- Voice: "One sentence. Gemini in the cloud turns it into a tiny program for Gemini Nano, plus a dozen tests."
+**Before recording**
+- Load `dist/extension` (Developer mode, Load unpacked). Rebuild it first with `npm run build:extension` so it has the badge fix.
+- Do one full dry run of the extension on `demo/jobs.html` and `demo/inbox.html` with Gemini Nano. This part has not been run on Gemini Nano yet, so check it before the take.
+- Compile the **Commission-only jobs** cantrip in the side panel ahead of time and leave it on, for the cold open.
+- Check the model once on `chrome://on-device-internals` and note its version for the description.
+- Run one check after loading the page, because the first run after a page load took about 21 seconds while Chrome loaded the model.
 
-**0:35 to 1:20, the compile view.**
-- Let round 1 run while the dots turn green and red.
-- Point at the meters: "Blue is the cloud, green is my device. Every test is running on Gemini Nano right here."
-- When the repair note appears: "Gemini read the failures and explains why the small model missed them."
-- Round 2 passes.
-- On the unseen tests: "A third of the tests were hidden from the repairs, so this score is honest."
+**0:00 to 0:12, the cold open.**
+- Screen: `demo/jobs.html` with the side panel open. Press **Read this page**. Badges land on the commission-only cards, with the deciding words highlighted.
+- Voice: "An AI running on my laptop just checked every post on this job board. No cloud call, no cost, and the page never left my machine."
 
-**1:20 to 1:50, it runs on the page.**
-- Press Read this page. Badges appear on the flagged job cards, with the deciding words highlighted.
-- Voice: "Now it's free. Every post on this page was checked on my device. Nothing was sent anywhere."
-- Turn Wi-Fi off and check another card: "It still works offline."
+**0:12 to 0:30, who it's for and how.**
+- Screen: hover a badge, then the side panel's "ran on this device" line.
+- Voice: "Job seekers read dozens of posts a day, and people reported losing 501 million dollars to job scams in 2024. A small model on your device could check every post for free, but small models are fragile, and nobody writes good prompts for them. So Cantrip splits the work. Gemini in the cloud writes and debugs the prompt. Gemini Nano on my device runs it. Both through Firebase AI Logic."
 
-**1:50 to 2:10, it learns.**
-- Mark one verdict wrong. It becomes a test, and Cantrip recompiles on the device.
-- Voice: "Correct it once and it's a test forever."
+**0:30 to 0:45, a new rule in one sentence.**
+- Switch to `demo/inbox.html`. Press the **Pressure-to-pay emails** chip and **Compile**.
+- Voice: "Different trap, one sentence. Gemini writes a tiny program for Gemini Nano, and a dozen tests."
 
-**2:10 to 2:40, sharing.**
-- Press Share and show the 7-character code.
-- Switch to a second Chrome profile, enter the code, and the rule installs.
-- Voice: "Rules travel. Share one by a code, and it runs on someone else's device, still with nothing sent to the cloud."
-- Run one check there to show it ran on the device.
+**0:45 to 1:35, the compile.**
+- Let it run. Speed the footage up and put "sped up" on screen: on 14 November this rule took four rounds and about 2 minutes 47 seconds.
+- Point at the meters: "Blue is the cloud, green is my device. Every one of these tests ran on Gemini Nano, here."
+- When the repair note appears: "Gemini read what the small model got wrong, and rewrote the program."
+- On the unseen tests: "A third of the tests were hidden from the repairs, so this last score is honest." Say the real score from the take, whatever it is.
+
+**1:35 to 2:00, private and offline.**
+- Press **Read this page** on the inbox. The pressure emails get badges and the friend's dinner email does not.
+- Turn Wi-Fi off. Open DevTools on the Network tab. Press **Read again**. Badges come back and the Network tab stays empty.
+- Voice: "Wi-Fi is off, and nothing was sent. Compiling needed the cloud once. Running never does."
+
+**2:00 to 2:20, it learns.**
+- Open a verdict that is wrong or borderline (the parcel email was borderline on 14 November), and press the right label.
+- Voice: "Correct it once, and it becomes a test. Cantrip recompiles against it on my device."
+
+**2:20 to 2:40, sharing.**
+- Press **Share** and show the 7-character code.
+- In a second Chrome profile, open the hosted site with the code. It installs with its scores. Run one example and show "ran on this device".
+- Voice: "Rules travel by a code, and run on the next person's device with nothing sent."
 
 **2:40 to 2:50, the close.**
-- Voice: "The cloud compiles. Your device runs. Cantrip, built on Firebase AI Logic."
+- Voice: "The cloud writes the program. Your device runs it, on every page, for free. Cantrip, built on Firebase AI Logic."
 
 Tips:
-- Compile once before recording so the models are downloaded.
 - Keep the take honest. If a round fails, leave it in, because the repair is the point.
+- Put no third-party logos on screen. The demo pages use made-up companies for this reason.
+- If the extension misbehaves on the day, record the cold open in the web app instead: **Try it** on the Brand Ambassador example shows the same verdict, highlight and "ran on this device" line.
