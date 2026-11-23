@@ -15,6 +15,12 @@ const SKIP = "script, style, noscript, svg, nav, header, footer, form, button, s
 const CANDIDATES = "article, [role='article'], li, section, div, td, blockquote, p";
 
 function textOf(el: Element): string {
+  // Cantrip's own badges must never become part of what the model reads.
+  if (el.querySelector("[data-cantrip-ui]")) {
+    const copy = el.cloneNode(true) as Element;
+    copy.querySelectorAll("[data-cantrip-ui]").forEach((n) => n.remove());
+    return (copy.textContent ?? "").replace(/\s+/g, " ").trim();
+  }
   const t = (el as HTMLElement).innerText ?? el.textContent ?? "";
   return t.replace(/\s+/g, " ").trim();
 }
