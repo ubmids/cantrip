@@ -3,7 +3,8 @@
 **Say what to watch for. Gemini in the cloud writes and tests a program for Gemini Nano, which then checks every page you read, free and on your device.**
 
 Job seekers scroll past dozens of posts a day, and some of them hide that there is no pay, or
-that you will be the one paying. People reported losing $501 million to job scams in 2024,
+that you will be the one paying. People in the US reported losing $501 million to job and
+employment agency scams in 2024,
 [up from $90 million in 2020](https://www.ftc.gov/news-events/news/press-releases/2025/03/new-ftc-data-show-big-jump-reported-losses-fraud-125-billion-2024)
 (FTC). The warning signs are in the text. An on-device model could read every post for free
 without sending your job search anywhere, but small models are fragile, and nobody writes good
@@ -28,11 +29,15 @@ Platform: Web (Chrome), as a web app and a Chrome extension.
 | **From source, no keys:** `npm install && npm test` | Node 22 | 50+ tests of the compiler loop, the page splitter and the badges, with fake models. |
 | **Chrome extension** | Your own Firebase project (below) | Reads the open tab and badges what your rules flag. Its App Check debug token can't be published, so there is no prebuilt download. |
 
-**Gemini Nano in Chrome:** an up-to-date desktop Chrome (148 or later, no flags), about 22 GB
+**Gemini Nano in Chrome:** an up-to-date desktop Chrome (148 or later), about 22 GB
 of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM. Chrome downloads
 the model once, the first time you press **Download the model** (about 4 GB, it took 28 minutes
 on our test laptop). Without the on-device model the site still loads and says what is
 missing. It never quietly runs your text in the cloud.
+
+**Gemini Nano 4:** to use Gemini Nano 4, as the contest describes, turn on
+**Gemma 4 for Built-in AI** in `chrome://flags` ([contest FAQ](https://firebasehybridaihackathon.devpost.com/details/faqs)).
+The real runs below used Chrome 157 with no flags turned on.
 
 ## Results from real runs
 
@@ -85,7 +90,7 @@ splits the work by what each side is best at:
 | | Cloud (Gemini, `ONLY_IN_CLOUD`) | Device (Gemini Nano, `ONLY_ON_DEVICE`) |
 |---|---|---|
 | Job | Compiler: designs, tests and repairs programs | Runtime: runs the program on everything you read |
-| How often | A few calls, once per rule | Thousands of times, forever |
+| How often | A few calls, once per rule | On every block of every page, for as long as the rule is on |
 | Sees | Your rule and synthetic test texts | Your pages, emails and posts |
 | Cost | A few calls | $0 |
 
@@ -124,27 +129,28 @@ third is held out and never shown to the repair step.
 ## Run it
 
 You need an up-to-date desktop Chrome. Chrome's Prompt API, which Firebase AI Logic uses for
-on-device inference, is on by default from Chrome 148 for web pages and Chrome 138 for
-extensions. Chrome 157 needs no flag: `await LanguageModel.availability()` in DevTools answers
-`downloadable` on a fresh profile. On Chrome 139 to 147, turn on
-`chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` first.
+on-device inference, is listed for Chrome 148 on web pages and Chrome 138 in extensions in
+[Chrome's Prompt API docs](https://developer.chrome.com/docs/ai/prompt-api). We checked that Chrome 157 needs no flag:
+`await LanguageModel.availability()` in DevTools answers `downloadable` on a fresh profile.
+For Gemini Nano 4, turn on **Gemma 4 for Built-in AI** in `chrome://flags` (see above).
 
 Chrome downloads Gemini Nano once, the first time you press **Download the model**. For that
 it needs about 22 GB of free disk space on the volume that holds your Chrome profile, and
-either a GPU with more than 4 GB of VRAM or 16 GB of RAM with 4 CPU cores.
-`chrome://on-device-internals` shows the model's status. On-device prompts are limited to
-9,216 tokens.
+either a GPU with more than 4 GB of VRAM or 16 GB of RAM with 4 CPU cores
+([Chrome's requirements](https://developer.chrome.com/docs/ai/prompt-api)). `chrome://on-device-internals` shows the model's
+status. On-device prompts have a token limit, which a session reports as `contextWindow`.
 
 1. Create a Firebase project. In the console open **AI Services > AI Logic**, choose the
    **Gemini Developer API**, and finish the guided setup.
 2. Register a web app and copy its config into `.env` (start from `.env.example`).
-3. App Check: Firebase AI Logic refuses calls without it (enforced for every project since
-   2 November 2026).
-   - Hosted web app: create a score based reCAPTCHA key for your domain in the same Google
-     Cloud project, register the web app with it under **App Check > Apps > Fraud Defense**
-     (the new name for reCAPTCHA Enterprise), and set `VITE_RECAPTCHA_ENTERPRISE_KEY` to the
-     site key. Firebase has switched off its older reCAPTCHA v3 provider for new
-     registrations. `VITE_RECAPTCHA_V3_KEY` is still read, for projects registered before that.
+3. App Check: Firebase AI Logic refuses calls without it
+   ([enforced for every project since 2 November 2026](https://firebase.google.com/docs/ai-logic/app-check)).
+   - Hosted web app: create a score based reCAPTCHA Enterprise key for your domain in the same
+     Google Cloud project, register the web app with it under **App Check > Apps** (the console
+     listed this provider as **Fraud Defense** when we set it up), and set
+     `VITE_RECAPTCHA_ENTERPRISE_KEY` to the site key. Firebase
+     [recommends reCAPTCHA Enterprise for new integrations](https://firebase.google.com/docs/app-check/web/recaptcha-provider).
+     `VITE_RECAPTCHA_V3_KEY` is still read, for projects already registered with reCAPTCHA v3.
      App Check can refuse calls for a minute or two after registering.
    - Local dev and the extension: create a debug token under
      **App Check > Apps > Manage debug tokens** and set `VITE_APPCHECK_DEBUG_TOKEN`.
@@ -193,8 +199,7 @@ never read back into the model on the next pass.
 
 - Gemini Nano runs on desktop Chrome only. Without it, compiling is disabled rather than
   quietly running in the cloud.
-- Inputs are clipped to 3,000 characters to stay inside the on-device token limit (9,216 tokens
-  in Chrome, 4,096 on iPhone).
+- Inputs are clipped to 3,000 characters to stay inside the on-device model's token limit.
 - Compiling needs network. Running does not.
 - The extension uses an App Check debug token, because reCAPTCHA cannot load inside an
   extension page. That is fine for judging and not for a store release.
