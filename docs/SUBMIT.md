@@ -15,7 +15,7 @@ Devpost requires four things: a working demo app, a public repo, a demo video an
 
 1. **Join the hackathon** on Devpost: https://firebasehybridaihackathon.devpost.com (press "Join hackathon").
 2. The repo is public (done 23 Nov).
-3. **Deploy this branch's web app** after merging, so the hosted site has the `?preview` walkthrough and the plain-words error messages the README and the Devpost text now point to: `VITE_APPCHECK_DEBUG_TOKEN= npm run build`, check `grep -r "$YOUR_TOKEN" dist/web` finds nothing, then `firebase deploy --only hosting`. Until then `?preview` just opens the normal app.
+3. **Deploy: done.** The hosted site was rebuilt with the debug token empty and deployed on 24 Nov 2026, with the Job-scam shield, the cloud fallback and `?preview`.
 4. **Load the extension once** for the demo: `chrome://extensions`, Developer mode on, Load unpacked, pick `~/Desktop/cantrip/dist/extension`. Chrome doesn't let this be automated.
 5. **Record the video** (3 minutes maximum; only the first 3 are judged). It must be in English, show the app working in Chrome, and be public on YouTube. Before recording, compile once so Gemini Nano is already downloaded. If a round fails on camera, keep it: the repair is the point.
 6. **Put the YouTube link in two places:** the Devpost form and the README's "Try it" table (the Video row), then push before the deadline.

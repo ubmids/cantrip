@@ -216,7 +216,7 @@ never read back into the model on the next pass.
 | Part | State |
 |---|---|
 | Web app: compile, run, correct, share, install (localhost and hosted) | Run on Gemini Nano in Chrome 157, 14 November. See `docs/real-runs.md`. |
-| Web app: cloud fallback on a browser without Gemini Nano | Run on 24 November in headless Chromium (no `LanguageModel`) against the real Firebase project: every check went to `gemini-3.5-flash-lite` through `PREFER_ON_DEVICE` and was labelled "ran in the cloud". See `docs/real-runs.md`. |
+| Web app: cloud fallback on a browser without Gemini Nano | Run on 24 November, on localhost and on the hosted site (Chrome 158, fresh profile, App Check through reCAPTCHA Enterprise): every check went to `gemini-3.5-flash-lite` through `PREFER_ON_DEVICE` and was labelled "ran in the cloud". See `docs/real-runs.md`. |
 | Extension: page splitting, badges, highlights, clearing on a second read | Run in Chromium with the unpacked extension on the demo pages, 23 November, with scripted verdicts. |
 | Extension: side panel with Gemini Nano reading a live tab | Not run yet on Gemini Nano. |
 | iPhone app (`ios/`) | Builds for the Simulator. Never run on a phone, so no iPhone result is claimed. |

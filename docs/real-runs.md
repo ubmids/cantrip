@@ -160,6 +160,19 @@ stands in for a judge's computer without Gemini Nano. App Check used the debug t
   because a correction recompiles on the device.
 - The session count went down by one per check, and at 390 px wide nothing scrolled sideways.
 
+## On the hosted site, after the deploy
+
+- Headless Chromium: App Check refused the reCAPTCHA Enterprise exchange (HTTP 403), as on
+  23 November. The board now stops after the first refused check, shows one plain-words error
+  with **Try again**, and spends one cloud check, not five. Nothing scrolled sideways at 390 px
+  or at 1280 px, and `?preview` still loaded at 390 px.
+- Desktop Google Chrome 158 with a fresh profile (no Gemini Nano downloaded), started by
+  Playwright as a normal window: the reCAPTCHA Enterprise exchange answered 200, and **Check
+  these 5 posts** made five `generateContent` calls to `gemini-3.5-flash-lite`, all 200, 1.2 to
+  1.8 seconds each. Same five labels as on localhost, each marked "ran in the cloud: no
+  on-device model here". So App Check and Firebase AI Logic work on the hosted domain for a
+  normal Chrome window.
+
 These are runs of Gemini in the cloud, not Gemini Nano, so none of them count toward the
 on-device results above.
 
