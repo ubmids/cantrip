@@ -22,7 +22,7 @@ You type a rule in plain English, like "Warn me when a job post is really commis
 4. A third of the tests are held back from the repair loop, so the final "unseen tests" score is honest.
 5. From then on, the program runs on Gemini Nano in Chrome on every page you read. Posts, cards and emails get a badge with the deciding words highlighted. There's no cloud call and no cost, it works offline, and the page text never leaves your machine.
 
-Mark a verdict wrong and it becomes a new test, and Cantrip recompiles on your device. You can share a rule by a 7-character code. Install it on an iPhone and Gemini ports the program to Apple's on-device Foundation Model, then tunes it again on the phone.
+Mark a verdict wrong and it becomes a new test, and Cantrip recompiles on your device. You can share a rule by a 7-character code. The repo also holds a SwiftUI iPhone app that ports a shared program to Apple's on-device Foundation Model and tunes it again there. It builds, but it has not been run on a phone yet, so this submission is judged on the web app and the Chrome extension.
 
 ## How we built it
 
@@ -48,7 +48,7 @@ The compiler loop is plain TypeScript, with tests for the split, the repair loop
 
 ### What was built when
 
-Cantrip is a new project, started on 11 November 2026, the day the contest opened. The repository's first two commits (the compiler, the web app, the Chrome extension and the first iPhone sources) were pushed at 7:56 AM PT that day, about five and a half hours before the submission period opened at 1:30 PM PT. No older code or other pre-existing work is in it. Built during the submission period: the Xcode project for the iPhone app, a web polish pass (honest device status, narrow layout, current Chrome requirements), the Firebase project, the hosted site, the first real compiles on Gemini Nano on 14 November, and the fixes those runs forced (a fallback when the compiler model is overloaded, keeping the best program when the cloud drops mid repair, programs that stay calm on page fragments, and a sharing fix). [[Add the iPhone run here once it has really happened.]]. An AI coding assistant was used throughout.
+Cantrip is a new project, started on 11 November 2026, the day the contest opened. The repository's first two commits (the compiler, the web app, the Chrome extension and the first iPhone sources) were pushed at 7:56 AM PT that day, about five and a half hours before the submission period opened at 1:30 PM PT. No older code or other pre-existing work is in it. Built during the submission period: the Xcode project for the iPhone app, a web polish pass (honest device status, narrow layout, current Chrome requirements), the Firebase project, the hosted site, the first real compiles on Gemini Nano on 14 November, and the fixes those runs forced (a fallback when the compiler model is overloaded, keeping the best program when the cloud drops mid repair, programs that stay calm on page fragments, and a sharing fix). An AI coding assistant was used throughout.
 
 ## Challenges we ran into
 
@@ -61,15 +61,13 @@ Cantrip is a new project, started on 11 November 2026, the day the contest opene
 - On a real job post, a paragraph of duties with no word about pay was flagged as unpaid. Programs had only been tested on whole posts. The compiler now asks Gemini for fragment tests, and the false flag went away on the same real paragraphs.
 - Gemini Nano is not deterministic. One borderline email got three different labels on three runs, so a score can move by a test between runs.
 - Firebase has switched off its reCAPTCHA v3 provider for App Check, so the hosted site uses reCAPTCHA Enterprise.
-- [[Real problems from the iPhone run, once it has happened.]]
 
 ## Accomplishments we're proud of
 
 - The hybrid split is the product, not a fallback: the cloud compiles, the device runs.
 - On the commission-only rule, the compiler went from 8 of 9 to 9 of 9 on Gemini Nano in 2 rounds. It scored 3 of 3 on tests the repairs never saw, using 2 cloud calls and 21 runs on the device, in 85 seconds. The harder rules took all 4 rounds: the pressure-to-pay email rule went 5 of 8, 7 of 8, 7 of 8, 8 of 8 and then scored 3 of 4 on unseen tests, and the paid-review rule went 7, 7, 7, 8 of 8 and scored 4 of 4. The data-selling rule passed 9 of 9 on the first draft. Every one of the 105 test runs reported that it ran on the device.
 - Running a compiled program made no network request at all, on localhost and on the hosted site. A check takes about 2 to 4 seconds on an M2 Pro laptop.
-- On iPhone, the same cantrip went from [[score]] to [[score]] after porting to Apple's model. [[Use only real numbers.]]
-- One rule, two on-device models: the same cantrip runs on Gemini Nano in Chrome and on Apple's model on iPhone.
+- A rule travels: share it by a 7-character code and it installs on another browser, tested end to end against the real Firestore rules.
 
 ## What we learned
 
@@ -117,11 +115,11 @@ Firebase AI Logic, Gemini, Gemini Nano, Apple Foundation Models, Firebase App Ch
 - Mark one verdict wrong. It becomes a test, and Cantrip recompiles on the device.
 - Voice: "Correct it once and it's a test forever."
 
-**2:10 to 2:40, the second device.**
-- Press Share and show the code.
-- Cut to the iPhone: type the code and press Compile for this iPhone.
-- Voice: "Different phone, different model. Gemini ports the program to Apple's on-device model and tunes it again on the phone."
-- Show a check that says it ran on the iPhone with nothing sent.
+**2:10 to 2:40, sharing.**
+- Press Share and show the 7-character code.
+- Switch to a second Chrome profile, enter the code, and the rule installs.
+- Voice: "Rules travel. Share one by a code, and it runs on someone else's device, still with nothing sent to the cloud."
+- Run one check there to show it ran on the device.
 
 **2:40 to 2:50, the close.**
 - Voice: "The cloud compiles. Your device runs. Cantrip, built on Firebase AI Logic."
