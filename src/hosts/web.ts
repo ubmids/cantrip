@@ -3,6 +3,7 @@ import { getAuth, signInAnonymously } from "firebase/auth";
 import { createModels, deviceState } from "../firebase/ai";
 import { loadTuning, readEnv, startFirebase } from "../firebase/app";
 import { appCheckProblem } from "../firebase/appcheck";
+import { cloudBudget } from "../core/budget";
 import { fetchShared, publishCantrip } from "../firebase/share";
 import type { Cantrip } from "../core/types";
 import { mountApp } from "../ui/app";
@@ -59,7 +60,13 @@ async function boot() {
 
   const app = startFirebase(env, "web");
   const tuning = await loadTuning(app);
-  const models = createModels(app, { compilerModel: tuning.compilerModel });
+  const models = createModels(app, { compilerModel: tuning.compilerModel, cloudCheckModel: tuning.cloudCheckModel });
+  let session: Storage | null = null;
+  try {
+    session = sessionStorage;
+  } catch {
+    // Storage can be blocked; the cap then lives in memory for this page.
+  }
   const uid = async () => (getAuth(app).currentUser ?? (await signInAnonymously(getAuth(app))).user).uid;
 
   const host: Host = {
@@ -69,6 +76,8 @@ async function boot() {
     setupProblem: appCheckProblem(env, "web"),
     cloud: models.cloud,
     device: models.device,
+    // Browsers without Gemini Nano can still run a ready cantrip, in the cloud, a few times per session.
+    ...(tuning.cloudChecks > 0 ? { hybrid: models.hybrid, cloudBudget: cloudBudget(tuning.cloudChecks, session) } : {}),
     maxRounds: tuning.maxRounds,
     deviceState,
     prepareDevice: (p) => models.prepareDevice(p),

@@ -1,3 +1,4 @@
+import type { CloudBudget } from "../core/budget";
 import type { Cantrip, JsonModel, Target, Verdict } from "../core/types";
 import type { DeviceState } from "../firebase/ai";
 
@@ -28,7 +29,16 @@ export interface Host {
   /** Shown as a banner when the models are simulated (preview builds only). */
   simulated?: boolean;
   cloud: JsonModel;
+  /** On the device only. Compiling and page reading use this, so they fail closed. */
   device: JsonModel;
+  /**
+   * Web app only: Gemini Nano when the browser has it, Gemini in the cloud when it doesn't
+   * (Firebase AI Logic's PREFER_ON_DEVICE). Used to run a ready cantrip on text the person
+   * picked or pasted, after the app has said the text will go to the cloud.
+   */
+  hybrid?: JsonModel;
+  /** Caps the cloud runs of `hybrid` per session. */
+  cloudBudget?: CloudBudget;
   maxRounds: number;
   deviceState(): Promise<DeviceState>;
   prepareDevice(onProgress: (f: number) => void): Promise<void>;

@@ -16,6 +16,12 @@ describe("friendlyError", () => {
     expect(friendlyError(new TypeError("Failed to fetch"))).toMatch(/^Compiling needs the internet/);
   });
 
+  it("says a dropped connection stopped a cloud check, when the check went to the cloud", () => {
+    const m = friendlyError(new TypeError("Failed to fetch"), { cloudCheck: true });
+    expect(m).toMatch(/^This browser has no on-device model, so this check runs in the cloud/);
+    expect(m).not.toContain("Compiling");
+  });
+
   it("explains quota and overload errors", () => {
     expect(friendlyError(new Error("[429 ] Resource has been exhausted (e.g. check quota)."))).toMatch(/busy or out of free quota/);
   });

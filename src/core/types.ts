@@ -95,6 +95,8 @@ export interface Cantrip {
   updatedAt: number;
   /** Share code once published. */
   shareCode?: string;
+  /** Where a cantrip that ships with the app came from, shown on its page. */
+  provenance?: string;
 }
 
 export interface Verdict {

@@ -126,3 +126,40 @@ everything on the page side: splitting, badges, highlights and clearing.
 
 - The extension's side panel reading a live tab with Gemini Nano.
 - The iPhone app on a phone.
+
+# Checks, 24 November 2026: the cloud fallback
+
+The web app now runs a ready cantrip in the cloud when the browser has no Gemini Nano, using
+Firebase AI Logic's `InferenceMode.PREFER_ON_DEVICE` with `gemini-3.5-flash-lite` as the cloud
+model. Compiling and the extension's page reading still use `ONLY_ON_DEVICE` only.
+
+## The Job-scam shield
+
+The shield that the app now ships is the commission-only program from the second compile
+above (after the fragment fix: 9/9 on the first draft, 3/3 unseen, 1 cloud call, 12 device
+runs). It was exported unchanged from the browser storage of that run, and it matches the copy
+published to Firestore on 14 November. Only its display name and one-line description are new.
+
+## On localhost, against the real Firebase project
+
+Headless Chromium (Chrome for Testing 145, driven by Playwright) has no `LanguageModel`, so it
+stands in for a judge's computer without Gemini Nano. App Check used the debug token.
+
+- The page said, before anything ran, that the posts would go to Gemini in the cloud, with
+  15 checks left in the session.
+- **Check these 5 posts** made five `generateContent` calls to `gemini-3.5-flash-lite`, all
+  HTTP 200. Every result was labelled "ran in the cloud: no on-device model here".
+- Labels: Brand Ambassador "commission only", Customer Success Associate "standard pay", Solar
+  Sales Consultant "commission only", Account Executive "standard pay" (base plus commission),
+  Junior Graphic Designer "unpaid job". Four of the five quoted words found in the post, which
+  the app highlighted. The Solar Sales Consultant quote did not match the post, so nothing was
+  highlighted there.
+- Each check took 1.2 to 8.3 seconds. The whole board took about 21 seconds.
+- **Paste your own post** with the first example: "commission only", 2.9 seconds, labelled as a
+  cloud run. The correction buttons are replaced by a line saying corrections need Gemini Nano,
+  because a correction recompiles on the device.
+- The session count went down by one per check, and at 390 px wide nothing scrolled sideways.
+
+These are runs of Gemini in the cloud, not Gemini Nano, so none of them count toward the
+on-device results above.
+

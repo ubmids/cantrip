@@ -16,6 +16,11 @@ runs those tests **on your device**, reads what failed, rewrites the program, an
 When it passes, the program runs on Gemini Nano on every page you read: no cloud call,
 no cost, works offline, and the text never leaves your machine.
 
+The hosted app opens on a ready-made **Job-scam shield**, the commission-only program compiled
+on Gemini Nano on 14 November, and five sample job posts. One click checks them. On a computer
+without Gemini Nano, Firebase AI Logic's hybrid mode sends those checks to Gemini in the cloud
+instead, says so before you press the button, and labels every result with where it ran.
+
 Built for [#BuildHybridAI](https://firebasehybridaihackathon.devpost.com/) with Firebase AI Logic.
 Platform: Web (Chrome), as a web app and a Chrome extension.
 
@@ -24,7 +29,7 @@ Platform: Web (Chrome), as a web app and a Chrome extension.
 | Way | What you need | What you see |
 |---|---|---|
 | **Video** | Nothing | The whole loop on real hardware. Link added on submission day. |
-| **Hosted app:** https://sixth-trainer-388221.web.app | Desktop Chrome 148+ with Gemini Nano (see below) | Compile a rule, watch every test run on your device, try it on any text, correct it, share it by code. |
+| **Hosted app:** https://sixth-trainer-388221.web.app | For the Job-scam shield, a current desktop browser (checked in Chromium). Desktop Chrome 148+ with Gemini Nano (see below) for everything else | **Check these 5 posts** runs the real shield on sample job posts, and **Paste your own post** on any text. With Gemini Nano: on your device. Without it: in the cloud, 15 checks per browser session, each result marked "ran in the cloud: no on-device model here". With Gemini Nano you can also compile a rule, watch every test run on your device, correct it and share it by code. |
 | **Simulated walkthrough:** https://sixth-trainer-388221.web.app/?preview | Any browser | The interface with scripted answers and a banner saying so. No model runs in it. For seeing the flow when your machine has no Gemini Nano. |
 | **From source, no keys:** `npm install && npm test` | Node 22 | 50+ tests of the compiler loop, the page splitter and the badges, with fake models. |
 | **Chrome extension** | Your own Firebase project (below) | Reads the open tab and badges what your rules flag. Its App Check debug token can't be published, so there is no prebuilt download. |
@@ -32,8 +37,9 @@ Platform: Web (Chrome), as a web app and a Chrome extension.
 **Gemini Nano in Chrome:** an up-to-date desktop Chrome (148 or later), about 22 GB
 of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM. Chrome downloads
 the model once, the first time you press **Download the model** (about 4 GB, it took 28 minutes
-on our test laptop). Without the on-device model the site still loads and says what is
-missing. It never quietly runs your text in the cloud.
+on our test laptop). Without the on-device model the site says what is missing, and compiling
+is turned off, because a program has to be tested on the model that will run it. Ready
+programs can still run in the cloud, and the app says so before any text is sent.
 
 **Gemini Nano 4:** to use Gemini Nano 4, as the contest describes, turn on
 **Gemma 4 for Built-in AI** in `chrome://flags` ([contest FAQ](https://firebasehybridaihackathon.devpost.com/details/faqs)).
@@ -76,6 +82,7 @@ flowchart LR
   T -- "all pass, or out of rounds:<br/>keep the best program" --> H --> P
   P --> B(["Badge and highlight<br/>on the page"])
   FS[("Firestore:<br/>share by code")] -. "install elsewhere" .-> P
+  P -. "web app, no Gemini Nano in this browser:<br/>PREFER_ON_DEVICE sends the check to Gemini in the cloud,<br/>capped and labelled" .-> C(["Gemini in the cloud"])
 ```
 
 The cloud sees your rule and synthetic test texts. It never sees the pages you read. App Check
@@ -94,8 +101,17 @@ splits the work by what each side is best at:
 | Sees | Your rule and synthetic test texts | Your pages, emails and posts |
 | Cost | A few calls | $0 |
 
-The cloud never sees what you read, and the device never has to be smart enough to write
-its own instructions. Small models are fragile about prompting; a big model that can watch
+With Gemini Nano, the cloud never sees what you read, and the device never has to be smart
+enough to write its own instructions.
+
+There is a fallback too, for people without Gemini Nano, and it is kept narrow:
+
+| | With Gemini Nano | Without Gemini Nano (web app only) |
+|---|---|---|
+| Compiling a rule | Cloud writes and repairs, device runs every test | Off. A program must be tested on the model that will run it |
+| Running a ready rule on a post you pick or paste | `ONLY_ON_DEVICE`, $0 | `PREFER_ON_DEVICE`: Firebase AI Logic sends it to `gemini-3.5-flash-lite`. The app says so before you press Run, allows 15 per browser session, and labels the result "ran in the cloud: no on-device model here" |
+| The extension reading a page | `ONLY_ON_DEVICE` | Never. Whole pages are never sent to the cloud |
+ Small models are fragile about prompting; a big model that can watch
 the small one fail, on the real hardware, can fix that. Google's own
 [Automated Prompt Optimization](https://developer.android.com/blog/posts/how-automated-prompt-optimization-unlocks-quality-gains-for-ml-kit-s-gen-ai-prompt-api)
 shows the idea works offline for developers. Cantrip does it live, for anyone, from one sentence.
@@ -109,7 +125,10 @@ third is held out and never shown to the repair step.
   "unseen tests" score is earned. Examples that copy a test are dropped for the same reason.
 - **Never goes backwards.** Repairs start from the best program so far, and the best one wins.
 - **Learns from you.** Mark a verdict wrong and it becomes a test; Cantrip recompiles on your device.
-- **Fails closed.** Programs run with `ONLY_ON_DEVICE`, so page text is never silently sent to the cloud.
+- **Fails closed where it matters.** Compile tests and the extension's page reading run with
+  `ONLY_ON_DEVICE`, so page text is never sent to the cloud. The web app's one cloud fallback
+  (`PREFER_ON_DEVICE`) is for text you pick or paste, is announced before you press the button,
+  and is capped per session.
 - **Every verdict says where it ran** (`response.inferenceSource`), and the program Gemini
   wrote is one click away.
 - **Share a rule.** Publish a cantrip to Firestore and install it elsewhere by code. On a
@@ -119,8 +138,13 @@ third is held out and never shown to the repair step.
 
 - `src/firebase/ai.ts`: every model call. `getAI` + `GoogleAIBackend`, the cloud compiler with
   `InferenceMode.ONLY_IN_CLOUD` and a JSON `responseSchema`, the device runtime with
-  `InferenceMode.ONLY_ON_DEVICE`, `onDeviceParams.promptOptions.responseConstraint`, and
-  `initializeDeviceModel()` for the one-time download.
+  `InferenceMode.ONLY_ON_DEVICE`, `onDeviceParams.promptOptions.responseConstraint`, the hybrid
+  runtime with `InferenceMode.PREFER_ON_DEVICE` (Gemini Nano when Chrome has it, otherwise
+  `gemini-3.5-flash-lite` in the cloud), and `initializeDeviceModel()` for the one-time download.
+- `src/ui/app.ts`: picks the route for each check (`route()`), says where it will run before it
+  runs, and shows `response.inferenceSource` on every verdict. `src/core/budget.ts` caps cloud
+  checks per session.
+- `src/ui/starter/`: the Job-scam shield, exported unchanged from the 14 November compile.
 - `src/firebase/app.ts`: App Check (required by AI Logic) and Remote Config for the compiler
   model and round budget.
 - `src/firebase/share.ts` and `firestore.rules`: sharing through Firestore with anonymous Auth.
@@ -159,8 +183,9 @@ status. On-device prompts have a token limit, which a session reports as `contex
      `grep -r "$YOUR_TOKEN" dist/web` finds nothing.
 4. Turn on **Authentication > Anonymous** and create a **Firestore** database, then deploy
    the rules: `firebase deploy --only firestore:rules`.
-5. Optional: in **Remote Config** set `compiler_model` (default `gemini-3.6-flash`) and
-   `max_rounds` (default 4).
+5. Optional: in **Remote Config** set `compiler_model` (default `gemini-3.6-flash`),
+   `max_rounds` (default 4), `cloud_check_model` (default `gemini-3.5-flash-lite`) and
+   `cloud_checks_per_session` (default 15; 0 turns the cloud fallback off).
 
 ```bash
 npm install
@@ -191,14 +216,19 @@ never read back into the model on the next pass.
 | Part | State |
 |---|---|
 | Web app: compile, run, correct, share, install (localhost and hosted) | Run on Gemini Nano in Chrome 157, 14 November. See `docs/real-runs.md`. |
+| Web app: cloud fallback on a browser without Gemini Nano | Run on 24 November in headless Chromium (no `LanguageModel`) against the real Firebase project: every check went to `gemini-3.5-flash-lite` through `PREFER_ON_DEVICE` and was labelled "ran in the cloud". See `docs/real-runs.md`. |
 | Extension: page splitting, badges, highlights, clearing on a second read | Run in Chromium with the unpacked extension on the demo pages, 23 November, with scripted verdicts. |
 | Extension: side panel with Gemini Nano reading a live tab | Not run yet on Gemini Nano. |
 | iPhone app (`ios/`) | Builds for the Simulator. Never run on a phone, so no iPhone result is claimed. |
 
 ## Limits
 
-- Gemini Nano runs on desktop Chrome only. Without it, compiling is disabled rather than
-  quietly running in the cloud.
+- Gemini Nano runs on desktop Chrome only. Without it, compiling is turned off, and ready
+  rules run in the cloud only on text you pick or paste, after the app says so, up to 15 times
+  per browser session.
+- The Job-scam shield looks for one trap: posts that hide there is no guaranteed pay
+  (commission-only or unpaid). It does not look for other job scams, such as fake recruiters
+  asking for fees, unless you write that rule.
 - Inputs are clipped to 3,000 characters to stay inside the on-device model's token limit.
 - Compiling needs network. Running does not.
 - The extension uses an App Check debug token, because reCAPTCHA cannot load inside an

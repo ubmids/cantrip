@@ -13,10 +13,12 @@ function ensureStyle(doc: Document) {
   s.id = STYLE_ID;
   s.textContent = `
     [${ATTR}].cantrip-flagged { outline: 2px solid #d93d42 !important; outline-offset: 3px; border-radius: 6px; position: relative; }
-    .cantrip-badges { all: initial; position: absolute; top: -11px; right: 8px; z-index: 2147483646; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 16px); }
-    .cantrip-badge { all: initial; font: 600 11.5px/1 system-ui, sans-serif;
-      background: #d93d42; color: #fff; padding: 5px 8px; border-radius: 999px; box-shadow: 0 4px 14px -6px rgba(0,0,0,.5); cursor: help; white-space: nowrap; }
-    .cantrip-badge small { all: initial; font: 500 11.5px/1 system-ui, sans-serif; color: #fff; opacity: .85; margin-left: 4px; }
+    .cantrip-badges { all: initial; position: absolute; top: -12px; right: 10px; z-index: 2147483646; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 20px); }
+    .cantrip-badge { all: initial; font: 600 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: 0;
+      background: #fffdf8; color: #b4262c; border: 1px solid #d93d42; padding: 5px 9px; border-radius: 999px;
+      box-shadow: 0 4px 14px -8px rgba(0,0,0,.45); cursor: help; white-space: nowrap; display: inline-flex; align-items: center; }
+    .cantrip-badge small { all: initial; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", sans-serif; color: #6d685c; margin-left: 6px;
+      padding-left: 6px; border-left: 1px solid #e2dbcb; }
     .cantrip-pulse { animation: cantrip-pulse 1.2s ease-out 2; }
     @keyframes cantrip-pulse { 0% { outline-color: #d93d42; } 50% { outline-color: transparent; } 100% { outline-color: #d93d42; } }
     ::highlight(${HIGHLIGHT}) { background-color: #ffe58a; color: #1c1a16; }

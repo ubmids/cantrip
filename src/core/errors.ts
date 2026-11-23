@@ -3,7 +3,12 @@
  * person can act on. The original text stays at the end, in brackets, so a
  * bug report still carries it.
  */
-export function friendlyError(err: unknown): string {
+export interface ErrorContext {
+  /** A check of one text that went to the cloud because this browser has no on-device model. */
+  cloudCheck?: boolean;
+}
+
+export function friendlyError(err: unknown, ctx: ErrorContext = {}): string {
   const raw = errorText(err);
   const msg = raw.toLowerCase();
   const say = (human: string) => (raw && raw !== human ? `${human} (${shorten(raw)})` : human);
@@ -19,7 +24,11 @@ export function friendlyError(err: unknown): string {
   if (msg.includes("quota") || msg.includes("resource_exhausted") || msg.includes("429") || msg.includes("rate limit"))
     return say("Gemini in the cloud is busy or out of free quota right now. Wait a minute and try again.");
   if (msg.includes("failed to fetch") || msg.includes("networkerror") || msg.includes("network error") || msg.includes("err_internet_disconnected"))
-    return say("Compiling needs the internet, and the connection dropped. Running a compiled cantrip does not.");
+    return say(
+      ctx.cloudCheck
+        ? "This browser has no on-device model, so this check runs in the cloud, and the connection dropped. Try again when you are back online."
+        : "Compiling needs the internet, and the connection dropped. Running a compiled cantrip does not.",
+    );
   if (msg.includes("did not answer within"))
     return say("Gemini in the cloud took too long to answer. Try again in a minute.");
   if (msg.includes("label outside the program"))
