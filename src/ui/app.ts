@@ -675,15 +675,12 @@ export function mountApp(root: HTMLElement, host: Host) {
     const pending = s.board?.running && !out;
     const v = out && "verdict" in out ? out.verdict : null;
     return html`<li class="post ${v?.flagged ? "is-flagged" : v ? "is-fine" : ""} ${pending ? "pending" : ""}">
-      ${v?.flagged
-        ? html`<span class="badges"><span class="badge stamp">${v.label}</span></span>`
-        : nothing}
       <h3>${post.title}</h3>
       <p class="meta">${post.meta}</p>
       <p class="body">${v ? highlight(post.body, v.evidence) : post.body}</p>
       ${v
         ? html`<p class="post-verdict">
-            ${v.flagged ? nothing : html`<span class="ok-label">✓ ${v.label}</span>`}
+            ${v.flagged ? html`<span class="badge stamp">${v.label}</span>` : html`<span class="ok-label">✓ ${v.label}</span>`}
             <span class="reason-line">${v.reason}</span>
             ${sourceBadge(v)}
           </p>`
