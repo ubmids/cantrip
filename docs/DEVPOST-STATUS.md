@@ -70,3 +70,16 @@ The ready-made check only flags job posts that hide there is no guaranteed pay (
 
 - The Chrome extension badges are not in the gallery. They need Gemini Nano running and the extension loaded by hand, and the shell's headless Chrome has neither, so a real capture wasn't possible. If you get a good frame while recording the video, add it as a sixth image.
 - The real hosted app is in the gallery since 24 Nov (image 2), running in the cloud fallback.
+
+## Update, 24 Nov 2026 (afternoon)
+
+- Thumbnail: `docs/gallery/v2-1-front-page.png` (the redesigned front page).
+- Image gallery replaced with five real-run images of the new design, in this order: `v2-2-stamped-on-device.png`,
+  `v2-4-repairing-on-device.png`, `v2-5-compiled-9-of-9-unseen-3-of-3.png`, `v2-3-make-your-own-check.png`,
+  `v2-1-front-page.png`, each captioned with what it shows and the date. The six old images (old design and the
+  `?preview` walkthrough) were removed; their files are still in `docs/gallery/`.
+- Built with: Apple Foundation Models, Swift and SwiftUI removed (the iPhone app never ran on a phone).
+- About text and testing instructions re-pasted from `docs/submission.md` (Hidden-pay check wording).
+- Additional info: "Existing", with line counts (7,638 lines before the period; +3,608 / -411 during it).
+  Organization name: "N/A (individual entrant)".
+- Still empty: the demo video URL (required). Devpost shows 3/5 steps done.
