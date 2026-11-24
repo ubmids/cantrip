@@ -176,3 +176,19 @@ stands in for a judge's computer without Gemini Nano. App Check used the debug t
 These are runs of Gemini in the cloud, not Gemini Nano, so none of them count toward the
 on-device results above.
 
+
+## With the Gemma 4 for Built-in AI flag on (24 November)
+
+Chrome with **Gemma 4 for Built-in AI** enabled in `chrome://flags`, as the contest FAQ describes for Gemini Nano 4.
+Chrome downloaded a new on-device model after the flag was turned on. The model version was not read from
+`chrome://on-device-internals`, which can't be scripted; it is the model Chrome served with the flag on.
+Same MacBook (M2 Pro, 16 GB), hosted site https://sixth-trainer-388221.web.app, after the 24 November redesign.
+
+| What | Result |
+|---|---|
+| Hidden-pay check on the five sample posts | 3 of 5 flagged (two commission only, one unpaid), two standard pay; every verdict "ran on device", 1.3 to 6.8 s each, $0 |
+| Compile: "Flag emails that pressure me to pay or act right now, especially ones pretending to be a company I use." | First draft 8/9, repair 1 8/9, repair 2 9/9, unseen tests 3/3; 3 cloud calls, 30 test runs on the device |
+
+Gemini's repair notes, as shown on screen: the first draft "misclassified an impersonation attempt as urgent
+pressure because the text emphasized an immediate financial transfer"; the second repair fixed it.
+Screens: `docs/gallery/v2-2-stamped-on-device.png`, `v2-4-repairing-on-device.png`, `v2-5-compiled-9-of-9-unseen-3-of-3.png`.
