@@ -2,12 +2,7 @@
 
 **Say what to watch for. Gemini in the cloud writes and tests a program for Gemini Nano, which then checks every page you read, free and on your device.**
 
-<!--
-  GIF PLACEHOLDER (fix #9 in docs/JUDGE-REPORT.md): a 6-second GIF of badges landing on the demo
-  job board, cut from the demo video once it is recorded. Save it as docs/gallery/badges.gif and
-  replace this comment with:
-  ![Badges landing on a job board, checked on the device](docs/gallery/badges.gif)
--->
+![The Hidden-pay check stamping job posts on Gemini Nano, on the device (real run, 24 Nov 2026)](docs/gallery/cantrip-stamps.gif)
 
 Built for [#BuildHybridAI](https://firebasehybridaihackathon.devpost.com/) with Firebase AI Logic.
 Platform: Web (Chrome), as a web app and a Chrome extension.
