@@ -273,6 +273,11 @@ textarea:focus-visible, input:focus-visible { outline: none; }
 .error-box p { margin: 0; font-size: 15px; overflow-wrap: anywhere; color: var(--flag); }
 .post-verdict, .where, .flag { overflow-wrap: anywhere; }
 .error-box .btn { flex: none; }
+.error-text { display: grid; gap: 8px; min-width: 0; }
+.error-box p.error-next, .error-next { margin: 0; font-size: 13.5px; color: var(--muted); }
+.error-details summary { cursor: pointer; width: max-content; font: 500 11px/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.error-details code { display: block; margin-top: 6px; padding: 6px 8px; white-space: pre-wrap; color: var(--muted); }
+.theatre .error-next, .theatre .error-details { margin: -4px 0 12px; }
 .provenance { margin: -4px 0 14px; color: var(--muted); padding-left: 10px; border-left: 2px solid var(--device); font-style: italic; }
 .empty { margin: 0 0 6px; color: var(--muted); font-size: 15px; font-style: italic; }
 .skeleton { display: grid; gap: 8px; }

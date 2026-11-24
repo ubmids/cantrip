@@ -6,7 +6,7 @@ import type { Cantrip, CompiledProgram, JsonModel, Program, Round, Spec, TestCas
 import type { DeviceState } from "../firebase/ai";
 import type { Host, PageScan } from "./host";
 import { copyWithoutBlocking } from "./clipboard";
-import { friendlyError } from "../core/errors";
+import { explainError, friendlyError, type ExplainedError } from "../core/errors";
 import { SAMPLES } from "./samples";
 import { BOARD_POSTS, jobScamShield, STARTER_ID } from "./starter";
 
@@ -31,18 +31,21 @@ interface CompileView {
   holdoutTotal: number;
   cloudCalls: number;
   deviceRuns: number;
-  error?: string;
+  error?: ExplainedError;
   result?: Cantrip;
   abort: AbortController;
 }
 
+/** The outcome of one check: a verdict, or an error a person can act on. */
+type CheckOutcome = { verdict: Verdict } | { error: ExplainedError; limit?: true };
+
 interface BoardRun {
-  results: ({ verdict: Verdict } | { error: string; limit?: true } | null)[];
+  results: (CheckOutcome | null)[];
   running: boolean;
-  /** Why the run stopped early, when it did. */
+  /** Why the run stopped early without failing: the session's cap, or no way to run. */
   stopped?: string;
-  /** It stopped on an error rather than on the session's cap. */
-  failed?: boolean;
+  /** The error that stopped the run, when one did. */
+  failure?: ExplainedError;
 }
 
 /** Where the next check of a ready cantrip would run, or why it can't. */
@@ -51,6 +54,8 @@ type Route =
   | { ok: false; why: "checking" | "no-device" | "limit" };
 
 const REPO = "https://github.com/ubmids/cantrip";
+/** The README's "Try it" table, where the demo video is linked. */
+const VIDEO = `${REPO}#try-it`;
 
 interface State {
   loaded: boolean;
@@ -63,7 +68,7 @@ interface State {
   openId: string | null;
   tryText: string;
   tryResult: (Verdict & { text: string }) | null;
-  tryError: string | null;
+  tryError: ExplainedError | null;
   tryBusy: boolean;
   importCode: string;
   confirmDelete: boolean;
@@ -273,7 +278,7 @@ export function mountApp(root: HTMLElement, host: Host) {
   function failCompile(err: unknown) {
     if (!s.compile) return;
     s.compile.phase = "error";
-    s.compile.error = friendlyError(err);
+    s.compile.error = explainError(err);
   }
 
   function closeCompile(openResult: boolean) {
@@ -315,16 +320,17 @@ export function mountApp(root: HTMLElement, host: Host) {
    * Run one ready cantrip on one text where the route says, spending a cloud check when it goes to
    * the cloud. Errors come back as sentences a person can act on.
    */
-  async function check(c: Cantrip, text: string): Promise<{ verdict: Verdict } | { error: string; limit?: true }> {
+  async function check(c: Cantrip, text: string): Promise<CheckOutcome> {
     const compiled = c.programs[host.target];
-    if (!compiled) return { error: "This cantrip has no program for this device yet." };
+    if (!compiled) return { error: { message: "This cantrip has no program for this device yet.", retry: false } };
+    const limit = { error: { message: LIMIT_TEXT, retry: false }, limit: true } as const;
     const r = route();
-    if (!r.ok) return r.why === "limit" ? { error: LIMIT_TEXT, limit: true } : { error: "No model can run this in this browser." };
-    if (r.where === "cloud" && !host.cloudBudget!.take()) return { error: LIMIT_TEXT, limit: true };
+    if (!r.ok) return r.why === "limit" ? limit : { error: { message: "No model can run this in this browser.", retry: false } };
+    if (r.where === "cloud" && !host.cloudBudget!.take()) return limit;
     try {
       return { verdict: await runProgram(r.model, c.spec, compiled.program, text) };
     } catch (err) {
-      return { error: friendlyError(err, { cloudCheck: r.where === "cloud" }) };
+      return { error: explainError(err, { cloudCheck: r.where === "cloud" }) };
     }
   }
 
@@ -372,8 +378,8 @@ export function mountApp(root: HTMLElement, host: Host) {
       const out = await check(shield, `${BOARD_POSTS[i].title}. ${BOARD_POSTS[i].body}`);
       if ("error" in out) {
         // The same cause (App Check, quota, the network) would fail every post, and spend a cloud check each time.
-        s.board.stopped = out.error;
-        s.board.failed = !out.limit;
+        if (out.limit) s.board.stopped = out.error.message;
+        else s.board.failure = out.error;
         break;
       }
       s.board.results[i] = out;
@@ -597,6 +603,31 @@ export function mountApp(root: HTMLElement, host: Host) {
     return html`<p class="where muted">This browser has no on-device model to run it.</p>`;
   };
 
+  /**
+   * The way on after a refusal (a reload will not help), and the SDK's own text folded away
+   * under "Details", where a bug report can still find it.
+   */
+  const errorExtras = (e: ExplainedError) => html`${e.refused
+      ? html`<p class="small error-next">
+          The demo video is linked from the <a href=${VIDEO} target="_blank" rel="noopener">README</a>.
+        </p>`
+      : nothing}
+    ${e.details
+      ? html`<details class="error-details">
+          <summary>Details</summary>
+          <code>${e.details}</code>
+        </details>`
+      : nothing}`;
+
+  /** An error a person can act on. "Try again" shows only when trying again can help. */
+  const errorBox = (e: ExplainedError, retry?: () => void) => html`<div class="error-box" role="alert">
+    <div class="error-text">
+      <p>${e.message}</p>
+      ${errorExtras(e)}
+    </div>
+    ${retry && e.retry ? html`<button class="btn small" @click=${retry}>Try again</button>` : nothing}
+  </div>`;
+
   const boardCard = (i: number) => {
     const post = BOARD_POSTS[i];
     const out = s.board?.results[i] ?? null;
@@ -616,7 +647,7 @@ export function mountApp(root: HTMLElement, host: Host) {
             ${sourceBadge(v)}
           </p>`
         : out && "error" in out
-          ? html`<p class="post-verdict flag small">${out.error}</p>`
+          ? html`<p class="post-verdict flag small">${out.error.message}</p>`
           : pending
             ? html`<p class="post-verdict muted small"><i class="spinner tiny"></i> Waiting for its turn…</p>`
             : nothing}
@@ -644,7 +675,7 @@ export function mountApp(root: HTMLElement, host: Host) {
           </div>
           <div class="row wrap gap">
             <button class="btn ghost small" @click=${openStarter}>Paste your own post</button>
-            <button class="btn primary" ?disabled=${!r.ok || b?.running} @click=${checkBoard}>
+            <button class="btn primary" ?disabled=${!r.ok || b?.running || b?.failure?.retry === false} @click=${checkBoard}>
               ${b?.running ? html`<i class="spinner tiny light"></i> Checking ${done + 1} of ${BOARD_POSTS.length}…` : b ? "Check again" : `Check these ${BOARD_POSTS.length} posts`}
             </button>
           </div>
@@ -655,14 +686,11 @@ export function mountApp(root: HTMLElement, host: Host) {
               ${done < BOARD_POSTS.length ? html`<span class="muted">· ${BOARD_POSTS.length - done} not checked</span>` : nothing}
             </p>`
           : nothing}
-        ${b?.stopped
-          ? b.failed
-            ? html`<div class="error-box" role="alert">
-                <p>${b.stopped}</p>
-                ${r.ok ? html`<button class="btn small" @click=${checkBoard}>Try again</button>` : nothing}
-              </div>`
-            : html`<p class="where limit">${b.stopped}</p>`
-          : routeNote(BOARD_POSTS.length)}
+        ${b?.failure
+          ? errorBox(b.failure, r.ok ? checkBoard : undefined)
+          : b?.stopped
+            ? html`<p class="where limit">${b.stopped}</p>`
+            : routeNote(BOARD_POSTS.length)}
         <ol class="board" aria-live="polite">
           ${BOARD_POSTS.map((_, i) => boardCard(i))}
         </ol>
@@ -711,7 +739,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       repairing: html`<span class="cloud">☁ Gemini is reading the failures and rewriting the program…</span>`,
       holdout: html`<span class="device">▣ Checking it on tests the repairs never saw…</span>`,
       done: html`<span>Compiled.</span>`,
-      error: html`<span class="flag">${v.error}</span>`,
+      error: html`<span class="flag">${v.error?.message}</span>`,
     };
     return lines[v.phase];
   };
@@ -741,7 +769,8 @@ export function mountApp(root: HTMLElement, host: Host) {
         <div class="meter device"><b>${v.deviceRuns}</b><span>${host.simulated ? "scripted device runs" : "test runs on your device"}</span></div>
         <div class="meter"><b>${slash(best)}</b><span>best so far</span></div>
       </div>
-      <p class="phase">${v.phase === "done" ? nothing : html`<i class="spinner"></i>`}${phaseLine(v)}</p>
+      <p class="phase">${v.phase === "done" || v.phase === "error" ? nothing : html`<i class="spinner"></i>`}${phaseLine(v)}</p>
+      ${v.phase === "error" && v.error ? errorExtras(v.error) : nothing}
       <ol class="rounds">
         ${v.rounds.map(
           (r) => html`<li class="round ${r.done ? "done" : "live"}">
@@ -776,7 +805,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       ${v.phase === "error"
         ? html`<div class="row end">
             <button class="btn ghost" @click=${() => closeCompile(false)}>Back</button>
-            ${v.mode === "new"
+            ${v.mode === "new" && v.error?.retry !== false
               ? html`<button class="btn primary" @click=${() => ((s.compile = null), startCompile(v.intent))}>Try again</button>`
               : nothing}
           </div>`
@@ -856,12 +885,7 @@ export function mountApp(root: HTMLElement, host: Host) {
               : "Run on device"}
         </button>
       </div>
-      ${s.tryError
-        ? html`<div class="error-box" role="alert">
-            <p>${s.tryError}</p>
-            ${way.ok ? html`<button class="btn small" @click=${() => tryIt(c)}>Try again</button>` : nothing}
-          </div>`
-        : nothing}
+      ${s.tryError ? errorBox(s.tryError, way.ok ? () => tryIt(c) : undefined) : nothing}
       ${r
         ? html`<div class="result ${r.flagged ? "is-flagged" : "is-fine"}">
             <div class="row between">

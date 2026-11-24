@@ -223,10 +223,37 @@ describe("hybrid runs in the web app", () => {
 
     expect(calls).toBe(1);
     expect(budget.left()).toBe(4);
-    const msg = flat(root.querySelector(".shield .error-box"));
+    const msg = flat(root.querySelector(".shield .error-box p"));
     expect(msg).toMatch(/^Firebase App Check could not confirm this browser/);
-    expect(msg).not.toContain("https://");
+    expect(msg).toContain("another normal browser window");
+    expect(msg).toContain("watch the demo video");
+    expect(msg).not.toMatch(/reload the page|try again/i);
+    expect(msg).not.toContain("AI/fetch-error");
     expect(root.querySelector(".summary")).toBeNull();
+    // A refusal won't clear on a retry, so there is no Try again, and the SDK's text sits under Details.
+    expect(button(root, /Try again/)).toBeUndefined();
+    expect(button(root, /Check again/)!.disabled).toBe(true);
+    const details = root.querySelector(".shield .error-box details.error-details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(flat(details.querySelector("summary"))).toBe("Details");
+    expect(flat(details.querySelector("code"))).toContain("[401 ] Firebase App Check token is invalid. (AI/fetch-error)");
+    expect(flat(details)).not.toContain("https://");
+    expect(root.querySelector(".shield .error-box a")?.getAttribute("href")).toContain("#try-it");
+  });
+
+  it("keeps Try again for errors a retry can clear, such as a busy cloud", async () => {
+    const busy: JsonModel = {
+      async generateJson() {
+        throw new Error("AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/x:generateContent: [429 ] Resource exhausted. (AI/fetch-error)");
+      },
+    };
+    const { root } = mount({ device: "unsupported", hybrid: busy, budget: cloudBudget(5, memoryStore()) });
+    await vi.waitFor(() => expect(button(root, /Check these 5 posts/)?.disabled).toBe(false));
+    button(root, /Check these 5 posts/)!.click();
+    await vi.waitFor(() => expect(root.querySelector(".shield .error-box")).not.toBeNull());
+
+    expect(flat(root.querySelector(".shield .error-box p"))).toMatch(/^Gemini in the cloud is busy/);
+    expect(flat(root.querySelector(".shield .error-box details code"))).toContain("[429 ]");
     expect(button(root, /Try again/)).toBeDefined();
   });
 

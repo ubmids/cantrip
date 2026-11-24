@@ -1,10 +1,58 @@
 import { describe, expect, it } from "vitest";
-import { friendlyError } from "../src/core/errors";
+import { explainError, friendlyError } from "../src/core/errors";
+
+const THROTTLED = new Error("AppCheck: Requests throttled due to previous 403 error. Attempts allowed again after 01d:00m:00s (appCheck/throttled).");
+const AI_401 = new Error(
+  "AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/p/models/gemini-3.5-flash-lite:generateContent: [401 ] Firebase App Check token is invalid. (AI/fetch-error)",
+);
+
+describe("explainError on an App Check refusal", () => {
+  it("explains a throttle in words, never says to reload, and keeps the SDK's code apart", () => {
+    const e = explainError(THROTTLED, { cloudCheck: true });
+    expect(e.message).toMatch(/^Firebase App Check turned this browser away earlier/);
+    expect(e.message).toContain("Reloading will not help");
+    expect(e.message).toContain("another normal browser window");
+    expect(e.message).toContain("watch the demo video");
+    expect(e.message).not.toMatch(/reload the page|try again/i);
+    expect(e.message).not.toContain("appCheck/throttled");
+    expect(e.details).toContain("appCheck/throttled");
+    expect(e.retry).toBe(false);
+    expect(e.refused).toBe(true);
+  });
+
+  it("treats the 401 Firebase AI Logic gives a refused browser as a refusal, and hides the raw text", () => {
+    const e = explainError(AI_401, { cloudCheck: true });
+    expect(e.message).toMatch(/^Firebase App Check could not confirm this browser, so the cloud check was refused\./);
+    expect(e.message).not.toContain("[401");
+    expect(e.message).not.toContain("AI/fetch-error");
+    expect(e.details).toContain("[401 ] Firebase App Check token is invalid. (AI/fetch-error)");
+    expect(e.details).not.toContain("https://");
+    expect(e.retry).toBe(false);
+  });
+
+  it("treats a bare 403 from the cloud as a refusal too", () => {
+    const e = explainError(new Error("AI: Error fetching from https://x/y: [403 ] Forbidden (AI/fetch-error)"), { cloudCheck: true });
+    expect(e.refused).toBe(true);
+    expect(e.message).not.toContain("Forbidden");
+  });
+
+  it("names the compiler's call, not a cloud check, when a compile is refused", () => {
+    expect(explainError(new Error("FirebaseError: AppCheck: 403 error (appCheck/fetch-status-error).")).message).toMatch(
+      /^Firebase App Check could not confirm this browser, so the call to Gemini was refused\./,
+    );
+  });
+
+  it("lets a retry happen for errors a retry can clear", () => {
+    expect(explainError(new Error("[429 ] quota"), { cloudCheck: true }).retry).toBe(true);
+    expect(explainError(new TypeError("Failed to fetch"), { cloudCheck: true }).retry).toBe(true);
+  });
+});
 
 describe("friendlyError", () => {
-  it("explains an App Check throttle instead of showing the SDK's code", () => {
-    const m = friendlyError(new Error("AppCheck: Requests throttled due to previous 403 error. Attempts allowed again after 01d:00m:00s (appCheck/throttled)."));
+  it("explains an App Check throttle instead of leading with the SDK's code", () => {
+    const m = friendlyError(THROTTLED);
     expect(m).toMatch(/^Firebase App Check turned this browser away/);
+    expect(m).not.toMatch(/reload the page/i);
     expect(m).toContain("appCheck/throttled");
   });
 
