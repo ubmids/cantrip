@@ -492,11 +492,14 @@ export function mountApp(root: HTMLElement, host: Host) {
     </div>`;
   };
 
+  const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const header = () => html`<header class="top">
-    <a class="mark" href="#" @click=${(e: Event) => (e.preventDefault(), closeCompile(false), openCantrip(null))}
-      ><span class="spark" aria-hidden="true">✦</span>cantrip</a
-    >
-    ${devicePill()}
+    <a class="mark" href="#" @click=${(e: Event) => (e.preventDefault(), closeCompile(false), openCantrip(null))}>Cantrip</a>
+    <div class="dateline">
+      <span>${today}</span>
+      <span class="tagline">Every ad, read for you</span>
+      ${devicePill()}
+    </div>
   </header>`;
 
   const banners = () => html`${host.simulated
@@ -584,7 +587,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     const v = out && "verdict" in out ? out.verdict : null;
     return html`<li class="post ${v?.flagged ? "is-flagged" : v ? "is-fine" : ""} ${pending ? "pending" : ""}">
       ${v?.flagged
-        ? html`<span class="badges"><span class="badge">⚑ ${v.label}</span></span>`
+        ? html`<span class="badges"><span class="badge stamp">${v.label}</span></span>`
         : nothing}
       <h3>${post.title}</h3>
       <p class="meta">${post.meta}</p>
@@ -609,7 +612,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     const flagged = b ? b.results.filter((x) => x && "verdict" in x && x.verdict.flagged).length : 0;
     const r = route();
     return html`<section class="hero">
-      <p class="eyebrow">For job seekers</p>
+      <p class="eyebrow">Classifieds · For job seekers</p>
       <h1>Catch the job posts that hide there's no pay.</h1>
       <p class="lede">
         Some posts bury the fact that a role is commission-only or unpaid. Cantrip reads each post and flags those, quoting
