@@ -11,7 +11,7 @@ Platform: Web (Chrome), as a web app and a Chrome extension.
 
 | Way | What you need | What you see |
 |---|---|---|
-| **Video** | Nothing | The whole loop on real hardware. Link to come. |
+| **[Video](https://youtu.be/LlvJLOuaf3g)** (1:43) | Nothing | The whole loop on real hardware, recorded 24 Nov 2026. |
 | **[Hosted app](https://sixth-trainer-388221.web.app)** | A current desktop browser, not an automated one | One click checks 5 sample job posts, each result labelled with where it ran. |
 | **[Simulated walkthrough](https://sixth-trainer-388221.web.app/?preview)** | Any browser | The compile flow with scripted answers. No model runs in it. |
 | **The full loop** (hosted app) | Desktop Chrome 148+ with [Gemini Nano](#gemini-nano-in-chrome) | Compile your own rule, with every test run on your device. |

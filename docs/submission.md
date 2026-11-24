@@ -93,7 +93,7 @@ Firebase AI Logic, Gemini, Gemini Nano, Firebase App Check, Firebase Authenticat
 
 ## How to test it
 
-- **Fastest:** the video shows the full loop on real hardware.
+- **Fastest:** the video (https://youtu.be/LlvJLOuaf3g) shows the full loop on real hardware.
 - **One click, any computer:** open https://sixth-trainer-388221.web.app and press **Check these 5 posts**. The Hidden-pay check reads five sample job posts. Without Gemini Nano the checks run on Gemini in the cloud through Firebase AI Logic's hybrid mode, and each result says so (15 per browser session). **Paste your own post** checks any text.
 - **The full loop, with Gemini Nano:** desktop Chrome 148 or later (about 22 GB of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM). Press **Download the model** once, pick **Commission-only jobs** under "Your own rule", press **Compile**, then **Try it** on the examples. A compile takes about 1 to 3 minutes, and every check then runs on your device.
 - **See a compile without Gemini Nano:** https://sixth-trainer-388221.web.app/?preview is the compile interface with scripted answers. It says so on every screen, and no model runs in it.
