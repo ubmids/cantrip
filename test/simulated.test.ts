@@ -36,4 +36,34 @@ describe("the simulated walkthrough", () => {
     expect(root.querySelector(".verdict-banner")?.textContent).toContain("A real compile would run every test on your device.");
     expect(root.textContent).not.toContain("From now on every run happens on your device");
   });
+
+  it("reports a finished compile's scores as counts of tests, never as a bare percentage", async () => {
+    vi.useFakeTimers();
+    let list: Cantrip[] = [];
+    const root = document.createElement("div");
+    document.body.append(root);
+    // The scripted models, shown as a real compile would be.
+    mountApp(root, { ...simulatedHost(), simulated: false, load: async () => list, save: async (l) => void (list = l) });
+    await vi.advanceTimersByTimeAsync(50);
+
+    (root.querySelector("#compose button.chip") as HTMLButtonElement).click();
+    await vi.advanceTimersByTimeAsync(0);
+    root.querySelector("#compose form")!.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    await vi.advanceTimersByTimeAsync(120_000);
+
+    const banner = (root.querySelector(".verdict-banner")?.textContent ?? "").replace(/\s+/g, " ");
+    expect(banner).toMatch(/Ready\. Passed (\d+) of \1 tuning tests and (\d+) of \d+ it never saw\./);
+    expect(banner).not.toContain("%");
+
+    const p = list[0].programs["gemini-nano"]!;
+    const unseen = `${p.holdoutResults.filter((r) => r.ok).length}/${p.holdoutResults.length}`;
+    (root.querySelector(".verdict-banner .btn") as HTMLButtonElement).click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(root.querySelector(".detail .meters")?.textContent).toContain(unseen);
+    expect(root.querySelector(".detail .meters")?.textContent).not.toContain("%");
+
+    (root.querySelector(".back") as HTMLButtonElement).click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(root.querySelector(".list")?.textContent).toContain(`${unseen} on unseen tests`);
+  });
 });

@@ -194,6 +194,8 @@ describe("hybrid runs in the web app", () => {
     await vi.waitFor(() => expect(root.querySelector(".detail h2")?.textContent).toBe("Job-scam shield"));
 
     expect(root.querySelector(".provenance")?.textContent).toContain("Gemini Nano");
+    // Three unseen tests read as 3/3, not as "100%".
+    expect([...root.querySelectorAll(".detail .meter b")].map((e) => e.textContent)).toEqual(["9/9", "3/3", "$0"]);
     expect(flat(root.querySelector(".try .where"))).toContain("send this text to Gemini in the cloud");
     button(root, /Run in the cloud/)!.click();
     await vi.waitFor(() => expect(root.querySelector(".result")).not.toBeNull());

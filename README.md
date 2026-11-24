@@ -111,6 +111,12 @@ There is a fallback too, for people without Gemini Nano, and it is kept narrow:
 | Compiling a rule | Cloud writes and repairs, device runs every test | Off. A program must be tested on the model that will run it |
 | Running a ready rule on a post you pick or paste | `ONLY_ON_DEVICE`, $0 | `PREFER_ON_DEVICE`: Firebase AI Logic sends it to `gemini-3.5-flash-lite`. The app says so before you press Run, allows 15 per browser session, and labels the result "ran in the cloud: no on-device model here" |
 | The extension reading a page | `ONLY_ON_DEVICE` | Never. Whole pages are never sent to the cloud |
+
+One honest caveat: the cloud fallback runs the program that was compiled and tuned for Gemini
+Nano, unchanged, on `gemini-3.5-flash-lite`, so the device scores in this README do not carry
+over to it. On 24 November it gave the five sample posts the labels listed in
+[`docs/real-runs.md`](docs/real-runs.md) (two commission only, one unpaid, two standard pay), the labels
+those posts were written to get. That is five posts, not a tested score.
  Small models are fragile about prompting; a big model that can watch
 the small one fail, on the real hardware, can fix that. Google's own
 [Automated Prompt Optimization](https://developer.android.com/blog/posts/how-automated-prompt-optimization-unlocks-quality-gains-for-ml-kit-s-gen-ai-prompt-api)

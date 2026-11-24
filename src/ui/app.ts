@@ -76,6 +76,23 @@ const LIMIT_TEXT =
 
 const pct = (x: number | null | undefined) => (x == null ? "–" : `${Math.round(x * 100)}%`);
 const frac = (rs: TestResult[]) => `${rs.filter((r) => r.ok).length}/${rs.length}`;
+
+/**
+ * A score as the tests behind it, "3/3" rather than "100%": an unseen-test score often rests on
+ * three or four tests, and a percentage hides that.
+ */
+interface Count {
+  passed: number;
+  total: number;
+}
+const count = (rs: TestResult[]): Count => ({ passed: rs.filter((r) => r.ok).length, total: rs.length });
+/** The tuning tests of the round the compiler kept: the first round with the best score. */
+const tuneCount = (p: CompiledProgram): Count => {
+  const kept = p.rounds.find((r) => r.accuracy === p.tuneAccuracy) ?? p.rounds.at(-1);
+  return kept?.results.length ? count(kept.results) : { passed: 0, total: 0 };
+};
+const holdoutCount = (p: CompiledProgram): Count | null => (p.holdoutAccuracy == null || !p.holdoutResults.length ? null : count(p.holdoutResults));
+const slash = (c: Count | null) => (c ? `${c.passed}/${c.total}` : "–");
 const secs = (ms: number) => (ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
 
 export function mountApp(root: HTMLElement, host: Host) {
@@ -703,7 +720,8 @@ export function mountApp(root: HTMLElement, host: Host) {
     r.kind === "design" ? "First draft" : r.kind === "port" ? "Ported draft" : r.n === 1 ? "Current program" : `Repair ${r.n - 1}`;
 
   const compileTheatre = (v: CompileView) => {
-    const best = v.rounds.filter((r) => r.done).reduce((m, r) => Math.max(m, r.results.filter((x) => x.ok).length / (r.results.length || 1)), 0);
+    const done = v.rounds.filter((r) => r.done && r.results.length);
+    const best = done.length ? done.map((r) => count(r.results)).reduce((m, c) => (c.passed / c.total > m.passed / m.total ? c : m)) : null;
     const compiled = v.result?.programs[host.target];
     return html`<section class="theatre card" aria-live="polite">
       <div class="row between">
@@ -721,7 +739,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       <div class="meters">
         <div class="meter cloud"><b>${v.cloudCalls}</b><span>${host.simulated ? "scripted " : ""}cloud ${v.cloudCalls === 1 ? "call" : "calls"}${host.simulated ? "" : " to compile"}</span></div>
         <div class="meter device"><b>${v.deviceRuns}</b><span>${host.simulated ? "scripted device runs" : "test runs on your device"}</span></div>
-        <div class="meter"><b>${pct(best || null)}</b><span>best so far</span></div>
+        <div class="meter"><b>${slash(best)}</b><span>best so far</span></div>
       </div>
       <p class="phase">${v.phase === "done" ? nothing : html`<i class="spinner"></i>`}${phaseLine(v)}</p>
       <ol class="rounds">
@@ -749,9 +767,8 @@ export function mountApp(root: HTMLElement, host: Host) {
             ${host.simulated
               ? html`<p><b>Simulated.</b> These scores are scripted and no model ran. A real compile would run every test on your device.</p>`
               : html`<p>
-                  <b>Ready.</b> Passed ${pct(compiled.tuneAccuracy)} of its tuning tests and
-                  ${compiled.holdoutAccuracy == null ? "had no unseen tests" : html`${pct(compiled.holdoutAccuracy)} of tests it never trained on`}.
-                  From now on every run happens on your device: no cloud call, no cost, works offline.
+                  <b>Ready.</b> ${readyLine(compiled)} From now on every run happens on your device: no cloud call, no
+                  cost, works offline.
                 </p>`}
             <button class="btn primary" @click=${() => closeCompile(true)}>Try it</button>
           </div>`
@@ -765,6 +782,13 @@ export function mountApp(root: HTMLElement, host: Host) {
           </div>`
         : nothing}
     </section>`;
+  };
+
+  /** "Passed 9 of 9 tuning tests and 3 of 3 it never saw." Counts, never a bare percentage. */
+  const readyLine = (p: CompiledProgram) => {
+    const t = tuneCount(p);
+    const h = holdoutCount(p);
+    return `Passed ${t.passed} of ${t.total} tuning tests and ${h ? `${h.passed} of ${h.total} it never saw` : "had no unseen tests"}.`;
   };
 
   const highlight = (text: string, evidence: string | null) => {
@@ -791,7 +815,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     )}
     <p class="muted small">
       ${p.rounds.length} round${p.rounds.length === 1 ? "" : "s"} on the device:
-      ${p.rounds.map((r) => pct(r.accuracy)).join(" → ")}. ${p.cloudCalls} cloud ${p.cloudCalls === 1 ? "call" : "calls"}, ${p.deviceCalls} device runs.
+      ${p.rounds.map((r) => slash(count(r.results))).join(" → ")}. ${p.cloudCalls} cloud ${p.cloudCalls === 1 ? "call" : "calls"}, ${p.deviceCalls} device runs.
     </p>
   </details>`;
 
@@ -907,8 +931,8 @@ export function mountApp(root: HTMLElement, host: Host) {
       ${c.provenance ? html`<p class="provenance small">${c.provenance}</p>` : nothing}
       ${compiled
         ? html`<div class="meters">
-              <div class="meter"><b>${pct(compiled.tuneAccuracy)}</b><span>tuning tests</span></div>
-              <div class="meter"><b>${pct(compiled.holdoutAccuracy)}</b><span>unseen tests</span></div>
+              <div class="meter"><b>${slash(tuneCount(compiled))}</b><span>tuning tests</span></div>
+              <div class="meter"><b>${slash(holdoutCount(compiled))}</b><span>unseen tests</span></div>
               <div class="meter device"><b>$0</b><span>per run, on device</span></div>
             </div>
             ${programView(compiled)}`
@@ -948,7 +972,7 @@ export function mountApp(root: HTMLElement, host: Host) {
               <span class="small ${c.enabled ? "device" : "muted"}">${c.enabled ? "on" : "off"}</span>
             </span>
             <span class="small muted">${c.spec.description || c.spec.intent}</span>
-            <span class="small">${p ? html`<span class="device">▣ ${p.holdoutAccuracy == null ? `${pct(p.tuneAccuracy)} on its tests` : `${pct(p.holdoutAccuracy)} on unseen tests`}</span>` : html`<span class="muted">Needs compiling for this device</span>`}</span>
+            <span class="small">${p ? html`<span class="device">▣ ${holdoutCount(p) ? `${slash(holdoutCount(p))} on unseen tests` : `${slash(tuneCount(p))} on its tests`}</span>` : html`<span class="muted">Needs compiling for this device</span>`}</span>
           </button>
         </li>`;
       })}
