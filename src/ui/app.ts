@@ -578,13 +578,13 @@ export function mountApp(root: HTMLElement, host: Host) {
     ${host.setupProblem ? html`<div class="banner warn">${host.setupProblem}</div>` : nothing}`;
 
   /** In the web app this is its own screen; the simulated walkthrough and the extension open on it. */
-  const composer = () => html`<section class="composer card" id="compose">
+  const composer = () => html`<section class="composer ${hero() ? "screen" : "card"}" id="compose">
     ${hero()
       ? html`${backButton()}
           <h1>Make your own check</h1>
           <p class="lede">
-            Describe the trap in one sentence: Gemini in the cloud writes a small program for Gemini Nano on your device,
-            tests it there, and fixes what fails.
+            Describe the trap, and Gemini writes a small program for Gemini Nano, tests it on your device and fixes what
+            fails.
           </p>`
       : html`<h1>Teach your browser a rule.</h1>
           <p class="lede">
@@ -598,26 +598,29 @@ export function mountApp(root: HTMLElement, host: Host) {
       }}
     >
       <label class="sr" for="intent">What should Cantrip watch for?</label>
-      <textarea
-        id="intent"
-        rows="3"
-        maxlength="400"
-        placeholder="Warn me when a job post is really commission-only…"
-        .value=${s.draft}
-        @input=${(e: Event) => ((s.draft = (e.target as HTMLTextAreaElement).value), draw())}
-        @keydown=${(e: KeyboardEvent) => {
-          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) startCompile(s.draft);
-        }}
-      ></textarea>
-      <div class="chips">
+      <div class="intent-box">
+        <textarea
+          id="intent"
+          rows="3"
+          maxlength="400"
+          placeholder="Warn me when a job post is really commission-only…"
+          .value=${s.draft}
+          @input=${(e: Event) => ((s.draft = (e.target as HTMLTextAreaElement).value), draw())}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) startCompile(s.draft);
+          }}
+        ></textarea>
+        <div class="intent-foot">
+          <button class="btn primary" ?disabled=${!host.ready || !s.draft.trim() || s.device !== "available"}>
+            Compile <span class="arrow">☁ → ▣</span>
+          </button>
+        </div>
+      </div>
+      <div class="chips suggest">
+        <span class="try-label">Try:</span>
         ${(host.simulated ? SAMPLES.slice(0, 1) : SAMPLES).map(
           (x) => html`<button type="button" class="chip" @click=${() => ((s.draft = x.intent), draw())}>${x.chip}</button>`,
         )}
-      </div>
-      <div class="row end">
-        <button class="btn primary" ?disabled=${!host.ready || !s.draft.trim() || s.device !== "available"}>
-          Compile <span class="arrow">☁ → ▣</span>
-        </button>
       </div>
     </form>
     ${deviceHelp()}
@@ -701,9 +704,8 @@ export function mountApp(root: HTMLElement, host: Host) {
     return html`<section class="hero">
       <p class="eyebrow">Classifieds · For job seekers</p>
       <h1>Catch the job posts that hide there's no pay.</h1>
-      <p class="lede">
-        Cantrip reads each job post and stamps the ones that hide there's no pay, quoting the words that give it away.
-      </p>
+      <p class="lede">It stamps each one and quotes the words that give it away.</p>
+      ${proof()}
       <div class="shield">
         <div class="cta">
           <button class="btn primary" ?disabled=${!r.ok || b?.running || b?.failure?.retry === false} @click=${checkBoard}>
@@ -715,7 +717,9 @@ export function mountApp(root: HTMLElement, host: Host) {
           ? errorBox(b.failure, r.ok ? checkBoard : undefined)
           : b?.stopped
             ? html`<p class="where limit">${b.stopped}</p>`
-            : routeNote(BOARD_POSTS.length)}
+            : !r.ok && r.why === "limit"
+              ? html`<p class="where limit">${LIMIT_TEXT}</p>`
+              : nothing}
         ${b && !b.running && done
           ? html`<p class="summary" role="status">
               <b class=${flagged ? "flag" : "device"}>${flagged} of ${done} flagged</b>
@@ -731,6 +735,31 @@ export function mountApp(root: HTMLElement, host: Host) {
         </ol>
       </div>
     </section>`;
+  };
+
+  /**
+   * Where the checks will run, as a row of proof chips under the headline. In the cloud state a
+   * short line says the posts will go to Gemini in the cloud, before anything is sent.
+   */
+  const proof = () => {
+    const b = s.board;
+    const r = route();
+    const chips = (items: [string, string?][]) => html`<ul class="proof" aria-label="Where the checks run">
+      ${items.map(([text, tone]) => html`<li class=${tone ?? ""}>${text}</li>`)}
+    </ul>`;
+    if (b?.failure) return chips([[b.failure.refused ? "Refused in this browser" : "The check failed", "flag"]]);
+    if (b?.stopped || (!r.ok && r.why === "limit")) return chips([["No cloud checks left this visit", "flag"]]);
+    if (r.ok && r.where === "device")
+      return chips([["▣ On your device", "device"], ["Free"], ["Works offline"], ["Nothing sent"]]);
+    if (r.ok && r.where === "cloud") {
+      const left = host.cloudBudget!.left();
+      return html`${chips([["☁︎ Runs in the cloud here", "cloud"], [`${left} ${left === 1 ? "check" : "checks"} left`], ["Each result says where it ran"]])}
+        <p class="where cloud-note">
+          This browser has no on-device model, so Firebase AI Logic will send these posts to Gemini in the cloud.
+        </p>`;
+    }
+    if (!r.ok && r.why === "checking") return chips([["Checking this browser…"]]);
+    return chips([["No on-device model to run it"]]);
   };
 
   /** The way to the composer, kept to one line so the front page stays about the ads. */

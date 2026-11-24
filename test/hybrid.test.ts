@@ -199,7 +199,7 @@ describe("hybrid runs in the web app", () => {
   it("counts the checks in the library, and opens one from there", async () => {
     const device = new LabelModel("on_device");
     const { root } = mount({ device: "available", deviceModel: device });
-    await vi.waitFor(() => expect(flat(root.querySelector(".where"))).toContain("Nothing is sent anywhere"));
+    await vi.waitFor(() => expect(flat(root.querySelector(".proof"))).toContain("Nothing sent"));
     button(root, /Check these 5 posts/)!.click();
     await vi.waitFor(() => expect(root.querySelector(".summary")).not.toBeNull());
     expect(flat(root.querySelector(".checks-link"))).toBe("Your checks (1)");
@@ -216,8 +216,10 @@ describe("hybrid runs in the web app", () => {
     const hybrid = new LabelModel("in_cloud");
     const budget = cloudBudget(3, memoryStore());
     const { root, saved } = mount({ device: "unsupported", hybrid, budget });
-    await vi.waitFor(() => expect(flat(root.querySelector(".where"))).toContain("Gemini in the cloud"));
-    expect(flat(root.querySelector(".where"))).toContain("3 cloud checks left");
+    // Before anything is sent: the chips say where it runs and the cap, and one line says the posts go to the cloud.
+    await vi.waitFor(() => expect(flat(root.querySelector(".hero .where"))).toContain("send these posts to Gemini in the cloud"));
+    expect(flat(root.querySelector(".proof"))).toContain("Runs in the cloud here");
+    expect(flat(root.querySelector(".proof"))).toContain("3 checks left");
 
     button(root, /Check these 5 posts/)!.click();
     await vi.waitFor(() => expect(root.querySelector(".summary")).not.toBeNull());
@@ -228,6 +230,7 @@ describe("hybrid runs in the web app", () => {
     expect(sources.every((t) => t?.includes("ran in the cloud: no on-device model here"))).toBe(true);
     expect(root.querySelector(".board .badge")?.textContent).toContain("commission only");
     expect(flat(root.querySelector(".where.limit"))).toContain("free Gemini tier");
+    expect(flat(root.querySelector(".proof"))).toBe("No cloud checks left this visit");
     expect(flat(root.querySelector(".summary"))).toContain("2 not checked");
     expect(button(root, /Check again/)!.disabled).toBe(true);
     expect(saved().map((c) => c.id)).toEqual([STARTER_ID]);
@@ -237,7 +240,9 @@ describe("hybrid runs in the web app", () => {
     const device = new LabelModel("on_device");
     const budget = cloudBudget(3, memoryStore());
     const { root } = mount({ device: "available", deviceModel: device, hybrid: new Untouchable(), budget });
-    await vi.waitFor(() => expect(flat(root.querySelector(".where"))).toContain("Nothing is sent anywhere"));
+    await vi.waitFor(() => expect(flat(root.querySelector(".proof"))).toContain("Nothing sent"));
+    expect([...root.querySelectorAll(".proof li")].map((e) => flat(e))).toEqual(["▣ On your device", "Free", "Works offline", "Nothing sent"]);
+    expect(root.querySelector(".hero .where")).toBeNull();
 
     button(root, /Check these 5 posts/)!.click();
     await vi.waitFor(() => expect(root.querySelector(".summary")).not.toBeNull());
@@ -287,6 +292,7 @@ describe("hybrid runs in the web app", () => {
 
     expect(calls).toBe(1);
     expect(budget.left()).toBe(4);
+    expect(flat(root.querySelector(".proof"))).toBe("Refused in this browser");
     const msg = flat(root.querySelector(".shield .error-box p"));
     expect(msg).toMatch(/^Firebase App Check could not confirm this browser/);
     expect(msg).toContain("another normal browser window");
@@ -323,7 +329,8 @@ describe("hybrid runs in the web app", () => {
 
   it("never sends text to the cloud when the host offers no fallback", async () => {
     const { root } = mount({ device: "unsupported" });
-    await vi.waitFor(() => expect(flat(root.querySelector(".where"))).toContain("no on-device model to run it"));
+    await vi.waitFor(() => expect(flat(root.querySelector(".proof"))).toBe("No on-device model to run it"));
+    expect(root.querySelector(".hero .where")).toBeNull();
     expect(button(root, /Check these 5 posts/)!.disabled).toBe(true);
   });
 });
