@@ -83,3 +83,9 @@ The ready-made check only flags job posts that hide there is no guaranteed pay (
 - Additional info: "Existing", with line counts (7,638 lines before the period; +3,608 / -411 during it).
   Organization name: "N/A (individual entrant)".
 - Still empty: the demo video URL (required). Devpost shows 3/5 steps done.
+
+## SUBMITTED, 24 Nov 2026 (~14:00 UTC)
+
+Video https://youtu.be/LlvJLOuaf3g (public, 1:43, channel "Strive AI" on the solagoke21 account). Devpost 5/5,
+submitted; public page https://devpost.com/software/cantrip. Editable until 30 Nov 2026, 5:00 PM EST.
+After the deadline: no pushes until judging ends (~21 Dec); revoke the App Check debug token after 16 Dec.
