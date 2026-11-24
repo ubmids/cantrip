@@ -2,28 +2,12 @@
 
 **Say what to watch for. Gemini in the cloud writes and tests a program for Gemini Nano, which then checks every page you read, free and on your device.**
 
-Job seekers scroll past dozens of posts a day, and some of them hide that a role has no
-guaranteed pay: it is commission-only, or unpaid. The sign is in the text. An on-device model
-could read every post for free without sending your job search anywhere, but small models are
-fragile, and nobody writes good prompts for them.
-
-For context, people in the US reported losing $501 million to job and employment agency scams
-in 2024,
-[up from $90 million in 2020](https://www.ftc.gov/news-events/news/press-releases/2025/03/new-ftc-data-show-big-jump-reported-losses-fraud-125-billion-2024)
-(FTC). That figure covers job scams of every kind: fake recruiters, fake checks, upfront fees.
-Cantrip's ready-made check does not catch job scams in general. It catches one specific
-warning sign, a post that hides that there is no guaranteed pay.
-
-So you type one sentence: *"Warn me when a job post is really commission-only."*
-Gemini in the cloud writes a tiny program for the model on your device, writes tests for it,
-runs those tests **on your device**, reads what failed, rewrites the program, and repeats.
-When it passes, the program runs on Gemini Nano on every page you read: no cloud call,
-no cost, works offline, and the text never leaves your machine.
-
-The hosted app opens on a ready-made **Hidden-pay check**, the commission-only program compiled
-on Gemini Nano on 14 November, and five sample job posts. One click checks them. On a computer
-without Gemini Nano, Firebase AI Logic's hybrid mode sends those checks to Gemini in the cloud
-instead, says so before you press the button, and labels every result with where it ran.
+<!--
+  GIF PLACEHOLDER (fix #9 in docs/JUDGE-REPORT.md): a 6-second GIF of badges landing on the demo
+  job board, cut from the demo video once it is recorded. Save it as docs/gallery/badges.gif and
+  replace this comment with:
+  ![Badges landing on a job board, checked on the device](docs/gallery/badges.gif)
+-->
 
 Built for [#BuildHybridAI](https://firebasehybridaihackathon.devpost.com/) with Firebase AI Logic.
 Platform: Web (Chrome), as a web app and a Chrome extension.
@@ -32,18 +16,48 @@ Platform: Web (Chrome), as a web app and a Chrome extension.
 
 | Way | What you need | What you see |
 |---|---|---|
-| **Video** | Nothing | The whole loop on real hardware. Link added on submission day. |
-| **Hosted app:** https://sixth-trainer-388221.web.app | For the Hidden-pay check, a current desktop browser (checked in Chromium). Desktop Chrome 148+ with Gemini Nano (see below) for everything else | **Check these 5 posts** runs the real shield on sample job posts, and **Paste your own post** on any text. With Gemini Nano: on your device. Without it: in the cloud, 15 checks per browser session, each result marked "ran in the cloud: no on-device model here". With Gemini Nano you can also compile a rule, watch every test run on your device, correct it and share it by code. |
-| **Simulated walkthrough:** https://sixth-trainer-388221.web.app/?preview | Any browser | The interface with scripted answers and a banner saying so. No model runs in it. For seeing the flow when your machine has no Gemini Nano. |
-| **From source, no keys:** `npm install && npm test` | Node 22 | 50+ tests of the compiler loop, the page splitter and the badges, with fake models. |
-| **Chrome extension** | Your own Firebase project (below) | Reads the open tab and badges what your rules flag. Its App Check debug token can't be published, so there is no prebuilt download. |
+| **Video** | Nothing | The whole loop on real hardware. Link to come. |
+| **[Hosted app](https://sixth-trainer-388221.web.app)** | A current desktop browser, not an automated one | One click checks 5 sample job posts, each result labelled with where it ran. |
+| **[Simulated walkthrough](https://sixth-trainer-388221.web.app/?preview)** | Any browser | The compile flow with scripted answers. No model runs in it. |
+| **The full loop** (hosted app) | Desktop Chrome 148+ with [Gemini Nano](#gemini-nano-in-chrome) | Compile your own rule, with every test run on your device. |
+| **From source** | Node 22 | `npm install && npm test`: 80+ tests with fake models, no keys. |
+| **Chrome extension** | [Your own Firebase project](#run-it) | Badges the posts on the open tab that your rules flag. |
 
-**Gemini Nano in Chrome:** an up-to-date desktop Chrome (148 or later), about 22 GB
-of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM. Chrome downloads
-the model once, the first time you press **Download the model** (about 4 GB, it took 28 minutes
-on our test laptop). Without the on-device model the site says what is missing, and compiling
-is turned off, because a program has to be tested on the model that will run it. Ready
-programs can still run in the cloud, and the app says so before any text is sent.
+## In 30 seconds
+
+- **You say what to watch for**, in one sentence: *"Warn me when a job post is really commission-only."*
+- **Gemini in the cloud compiles it** into a tiny program for Gemini Nano, writes tests, runs
+  them **on your device**, reads what failed and rewrites the program until it passes.
+- **Gemini Nano then runs it on every page you read**: no cloud call, no cost, works offline,
+  and the text never leaves your machine.
+- **Ready to try:** the hosted app opens on the **Hidden-pay check** (compiled on Gemini Nano
+  on 14 November) and five sample job posts. Without Gemini Nano, Firebase AI Logic's hybrid
+  mode runs those checks in the cloud, says so before you press the button, and labels every
+  result with where it ran (15 cloud checks per browser session).
+
+## The problem
+
+Job seekers scroll past dozens of posts a day, and some of them hide that a role has no
+guaranteed pay: it is commission-only, or unpaid. The sign is in the text. An on-device model
+could read every post for free without sending your job search anywhere, but small models are
+fragile, and nobody writes good prompts for them. Cantrip has the cloud write and test those
+prompts, on your device's own model.
+
+For context, people in the US reported losing $501 million to job and employment agency scams
+in 2024,
+[up from $90 million in 2020](https://www.ftc.gov/news-events/news/press-releases/2025/03/new-ftc-data-show-big-jump-reported-losses-fraud-125-billion-2024)
+(FTC). That figure covers job scams of every kind: fake recruiters, fake checks, upfront fees.
+Cantrip's ready-made check does not catch job scams in general. It catches one specific
+warning sign, a post that hides that there is no guaranteed pay.
+
+## Gemini Nano in Chrome
+
+An up-to-date desktop Chrome (148 or later), about 22 GB of free disk space, and 16 GB of
+memory or a GPU with more than 4 GB of VRAM. Chrome downloads the model once, the first time
+you press **Download the model** (about 4 GB, it took 28 minutes on our test laptop). Without
+the on-device model the site says what is missing, and compiling is turned off, because a
+program has to be tested on the model that will run it. Ready programs can still run in the
+cloud, and the app says so before any text is sent.
 
 **Gemini Nano 4:** to use Gemini Nano 4, as the contest describes, turn on
 **Gemma 4 for Built-in AI** in `chrome://flags` ([contest FAQ](https://firebasehybridaihackathon.devpost.com/details/faqs)).
@@ -166,7 +180,7 @@ You need an up-to-date desktop Chrome. Chrome's Prompt API, which Firebase AI Lo
 on-device inference, is listed for Chrome 148 on web pages and Chrome 138 in extensions in
 [Chrome's Prompt API docs](https://developer.chrome.com/docs/ai/prompt-api). We checked that Chrome 157 needs no flag:
 `await LanguageModel.availability()` in DevTools answers `downloadable` on a fresh profile.
-For Gemini Nano 4, turn on **Gemma 4 for Built-in AI** in `chrome://flags` (see above).
+For Gemini Nano 4, turn on **Gemma 4 for Built-in AI** in `chrome://flags` (see [Gemini Nano in Chrome](#gemini-nano-in-chrome)).
 
 Chrome downloads Gemini Nano once, the first time you press **Download the model**. For that
 it needs about 22 GB of free disk space on the volume that holds your Chrome profile, and
