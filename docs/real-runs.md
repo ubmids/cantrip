@@ -133,7 +133,7 @@ The web app now runs a ready cantrip in the cloud when the browser has no Gemini
 Firebase AI Logic's `InferenceMode.PREFER_ON_DEVICE` with `gemini-3.5-flash-lite` as the cloud
 model. Compiling and the extension's page reading still use `ONLY_ON_DEVICE` only.
 
-## The Job-scam shield
+## The Hidden-pay check (first shipped as the Job-scam shield)
 
 The shield that the app now ships is the commission-only program from the second compile
 above (after the fragment fix: 9/9 on the first draft, 3/3 unseen, 1 cloud call, 12 device

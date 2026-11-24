@@ -40,7 +40,7 @@ Deadline: Mon 30 Nov 2026, 2:00 PM PT (11:00 PM Lagos).
 
 ## Updated on 24 Nov (draft saved, still not submitted)
 
-The hosted app now opens on a Job-scam shield, and browsers without Gemini Nano run it in the cloud through Firebase AI Logic's hybrid mode. The draft now matches main at 8049ce9:
+The hosted app now opens on a Job-scam shield (renamed the **Hidden-pay check** later on 24 Nov, see below), and browsers without Gemini Nano run it in the cloud through Firebase AI Logic's hybrid mode. The draft now matches main at 8049ce9:
 
 1. **About the project:** re-pasted from `docs/submission.md` (Inspiration to What's next, plus How to test it), 10,029 characters, including the shield and cloud-fallback paragraph and the "Hybrid fallback, kept narrow" bullet.
 2. **Testing instructions:** replaced with the new list (one click on any computer, the full loop with Gemini Nano, `?preview`, `npm test`), ending "No credentials are needed."
@@ -49,6 +49,15 @@ The hosted app now opens on a Job-scam shield, and browsers without Gemini Nano 
 5. **Thumbnail:** now `thumbnail-hosted-job-board.png`, a 3:2 crop of the top of image 6 (headline, shield, first flagged post with "ran in the cloud"). It shows a person's problem, which reads better than the diagram. Image 1 is still first in the gallery.
 
 Already on the draft from you (not touched by me): country of residence (Nigeria) and the three attestation checkboxes, all ticked.
+
+## Renamed on 24 Nov: Job-scam shield is now the Hidden-pay check
+
+The ready-made check only flags job posts that hide there is no guaranteed pay (commission-only or unpaid), so "Job-scam shield" promised more than it does. The app, the README and `docs/submission.md` now call it the **Hidden-pay check**, and the FTC $501M figure is given only as context, with a sentence saying the check catches one specific warning sign, not job scams in general. Not yet carried over:
+
+- **About the project** on the Devpost draft still has the old text: re-paste `docs/submission.md` (Inspiration to What's next, plus How to test it).
+- **Testing instructions** on the draft still say "Job-scam shield" if they were pasted with that name: change it to "Hidden-pay check".
+- **The hosted site** still shows "Job-scam shield" until the next deploy (`VITE_APPCHECK_DEBUG_TOKEN= npm run build && firebase deploy --only hosting`).
+- **Gallery image 6 and the thumbnail** (`6-hosted-job-board-cloud-fallback.png`, `thumbnail-hosted-job-board.png`) show the old name on screen. Recapture them after the deploy.
 
 ## Left for you
 

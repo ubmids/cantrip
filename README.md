@@ -2,13 +2,17 @@
 
 **Say what to watch for. Gemini in the cloud writes and tests a program for Gemini Nano, which then checks every page you read, free and on your device.**
 
-Job seekers scroll past dozens of posts a day, and some of them hide that there is no pay, or
-that you will be the one paying. People in the US reported losing $501 million to job and
-employment agency scams in 2024,
+Job seekers scroll past dozens of posts a day, and some of them hide that a role has no
+guaranteed pay: it is commission-only, or unpaid. The sign is in the text. An on-device model
+could read every post for free without sending your job search anywhere, but small models are
+fragile, and nobody writes good prompts for them.
+
+For context, people in the US reported losing $501 million to job and employment agency scams
+in 2024,
 [up from $90 million in 2020](https://www.ftc.gov/news-events/news/press-releases/2025/03/new-ftc-data-show-big-jump-reported-losses-fraud-125-billion-2024)
-(FTC). The warning signs are in the text. An on-device model could read every post for free
-without sending your job search anywhere, but small models are fragile, and nobody writes good
-prompts for them.
+(FTC). That figure covers job scams of every kind: fake recruiters, fake checks, upfront fees.
+Cantrip's ready-made check does not catch job scams in general. It catches one specific
+warning sign, a post that hides that there is no guaranteed pay.
 
 So you type one sentence: *"Warn me when a job post is really commission-only."*
 Gemini in the cloud writes a tiny program for the model on your device, writes tests for it,
@@ -16,7 +20,7 @@ runs those tests **on your device**, reads what failed, rewrites the program, an
 When it passes, the program runs on Gemini Nano on every page you read: no cloud call,
 no cost, works offline, and the text never leaves your machine.
 
-The hosted app opens on a ready-made **Job-scam shield**, the commission-only program compiled
+The hosted app opens on a ready-made **Hidden-pay check**, the commission-only program compiled
 on Gemini Nano on 14 November, and five sample job posts. One click checks them. On a computer
 without Gemini Nano, Firebase AI Logic's hybrid mode sends those checks to Gemini in the cloud
 instead, says so before you press the button, and labels every result with where it ran.
@@ -29,7 +33,7 @@ Platform: Web (Chrome), as a web app and a Chrome extension.
 | Way | What you need | What you see |
 |---|---|---|
 | **Video** | Nothing | The whole loop on real hardware. Link added on submission day. |
-| **Hosted app:** https://sixth-trainer-388221.web.app | For the Job-scam shield, a current desktop browser (checked in Chromium). Desktop Chrome 148+ with Gemini Nano (see below) for everything else | **Check these 5 posts** runs the real shield on sample job posts, and **Paste your own post** on any text. With Gemini Nano: on your device. Without it: in the cloud, 15 checks per browser session, each result marked "ran in the cloud: no on-device model here". With Gemini Nano you can also compile a rule, watch every test run on your device, correct it and share it by code. |
+| **Hosted app:** https://sixth-trainer-388221.web.app | For the Hidden-pay check, a current desktop browser (checked in Chromium). Desktop Chrome 148+ with Gemini Nano (see below) for everything else | **Check these 5 posts** runs the real shield on sample job posts, and **Paste your own post** on any text. With Gemini Nano: on your device. Without it: in the cloud, 15 checks per browser session, each result marked "ran in the cloud: no on-device model here". With Gemini Nano you can also compile a rule, watch every test run on your device, correct it and share it by code. |
 | **Simulated walkthrough:** https://sixth-trainer-388221.web.app/?preview | Any browser | The interface with scripted answers and a banner saying so. No model runs in it. For seeing the flow when your machine has no Gemini Nano. |
 | **From source, no keys:** `npm install && npm test` | Node 22 | 50+ tests of the compiler loop, the page splitter and the badges, with fake models. |
 | **Chrome extension** | Your own Firebase project (below) | Reads the open tab and badges what your rules flag. Its App Check debug token can't be published, so there is no prebuilt download. |
@@ -150,7 +154,7 @@ third is held out and never shown to the repair step.
 - `src/ui/app.ts`: picks the route for each check (`route()`), says where it will run before it
   runs, and shows `response.inferenceSource` on every verdict. `src/core/budget.ts` caps cloud
   checks per session.
-- `src/ui/starter/`: the Job-scam shield, exported unchanged from the 14 November compile.
+- `src/ui/starter/`: the Hidden-pay check, exported unchanged from the 14 November compile.
 - `src/firebase/app.ts`: App Check (required by AI Logic) and Remote Config for the compiler
   model and round budget.
 - `src/firebase/share.ts` and `firestore.rules`: sharing through Firestore with anonymous Auth.
@@ -232,9 +236,11 @@ never read back into the model on the next pass.
 - Gemini Nano runs on desktop Chrome only. Without it, compiling is turned off, and ready
   rules run in the cloud only on text you pick or paste, after the app says so, up to 15 times
   per browser session.
-- The Job-scam shield looks for one trap: posts that hide there is no guaranteed pay
-  (commission-only or unpaid). It does not look for other job scams, such as fake recruiters
-  asking for fees, unless you write that rule.
+- The Hidden-pay check looks for one warning sign: posts that hide there is no guaranteed pay
+  (commission-only or unpaid). It does not look for job scams in general, such as fake
+  recruiters asking for fees or posts that make you buy a "starter kit", unless you write that
+  rule. The sample Brand Ambassador post asks for a starter kit, and the check labels it only
+  "commission only".
 - Inputs are clipped to 3,000 characters to stay inside the on-device model's token limit.
 - Compiling needs network. Running does not.
 - The extension uses an App Check debug token, because reCAPTCHA cannot load inside an

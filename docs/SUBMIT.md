@@ -15,7 +15,7 @@ Devpost requires four things: a working demo app, a public repo, a demo video an
 
 1. **Join the hackathon** on Devpost: https://firebasehybridaihackathon.devpost.com (press "Join hackathon").
 2. The repo is public (done 23 Nov).
-3. **Deploy: done.** The hosted site was rebuilt with the debug token empty and deployed on 24 Nov 2026, with the Job-scam shield, the cloud fallback and `?preview`.
+3. **Deploy: done.** The hosted site was rebuilt with the debug token empty and deployed on 24 Nov 2026, with the Job-scam shield (renamed the Hidden-pay check afterwards, not deployed yet), the cloud fallback and `?preview`.
 4. **Load the extension once** for the demo: `chrome://extensions`, Developer mode on, Load unpacked, pick `~/Desktop/cantrip/dist/extension`. Chrome doesn't let this be automated.
 5. **Record the video** (3 minutes maximum; only the first 3 are judged). It must be in English, show the app working in Chrome, and be public on YouTube. Before recording, compile once so Gemini Nano is already downloaded. If a round fails on camera, keep it: the repair is the point.
 6. **Put the YouTube link in two places:** the Devpost form and the README's "Try it" table (the Video row), then push before the deadline.
@@ -24,7 +24,7 @@ Devpost requires four things: a working demo app, a public repo, a demo video an
 ## Worth checking before judging (10 to 16 Dec)
 
 - The hosted site runs on the Spark plan and the free Gemini tier. If several judges compile at once they may hit the free rate limit. The app now says so in words and the compiler falls back to the lighter model, but it is your call whether that is enough.
-- Judges without Gemini Nano can now run the Job-scam shield in the cloud, 15 checks per browser session. To change the cap without a redeploy, add `cloud_checks_per_session` in Remote Config (0 turns the cloud fallback off); `cloud_check_model` changes the model.
+- Judges without Gemini Nano can now run the Hidden-pay check in the cloud, 15 checks per browser session. To change the cap without a redeploy, add `cloud_checks_per_session` in Remote Config (0 turns the cloud fallback off); `cloud_check_model` changes the model.
 - Firebase App Check turns away browsers that reCAPTCHA scores as automated, and the SDK then waits a day before trying again in that browser. A judge in a normal Chrome window should be fine.
 
 ## After submitting

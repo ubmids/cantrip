@@ -8,7 +8,7 @@ import type { Host, PageScan } from "./host";
 import { copyWithoutBlocking } from "./clipboard";
 import { explainError, friendlyError, type ExplainedError } from "../core/errors";
 import { SAMPLES } from "./samples";
-import { BOARD_POSTS, jobScamShield, STARTER_ID } from "./starter";
+import { BOARD_POSTS, hiddenPayCheck, STARTER_ID, withCurrentStarterName } from "./starter";
 
 interface LiveRound {
   n: number;
@@ -348,11 +348,11 @@ export function mountApp(root: HTMLElement, host: Host) {
     draw();
   }
 
-  /** Put the Job-scam shield in the library, once. */
+  /** Put the Hidden-pay check in the library, once. */
   async function addStarter(): Promise<Cantrip> {
     const have = s.cantrips.find((c) => c.id === STARTER_ID);
     if (have) return have;
-    const c = jobScamShield();
+    const c = hiddenPayCheck();
     s.cantrips = [c, ...s.cantrips];
     await persist();
     return c;
@@ -363,7 +363,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     openCantrip(c.id);
   }
 
-  /** Run the Job-scam shield on the sample board, one post at a time, so results land as they come. */
+  /** Run the Hidden-pay check on the sample board, one post at a time, so results land as they come. */
   async function checkBoard() {
     if (s.board?.running) return;
     const shield = await addStarter();
@@ -495,7 +495,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     const walkthrough =
       host.kind === "web" && !host.simulated
         ? html`<p class="small">
-            No Gemini Nano here? The Job-scam shield above still runs, in the cloud. To see a compile, open the
+            No Gemini Nano here? The Hidden-pay check above still runs, in the cloud. To see a compile, open the
             <a href="?preview">simulated walkthrough</a> (scripted, no model runs in it) or the demo video linked in the
             <a href=${REPO} target="_blank" rel="noopener">README</a>.
           </p>`
@@ -670,7 +670,7 @@ export function mountApp(root: HTMLElement, host: Host) {
       <div class="card shield">
         <div class="row between wrap">
           <div>
-            <h2 class="shield-title">Job-scam shield</h2>
+            <h2 class="shield-title">Hidden-pay check</h2>
             <p class="muted small">Five sample posts from made-up companies. Try it on them, or on a post of your own.</p>
           </div>
           <div class="row wrap gap">
@@ -983,7 +983,7 @@ export function mountApp(root: HTMLElement, host: Host) {
         ? nothing
         : html`<p class="empty">
             Nothing here yet. ${hero()
-              ? html`Check the sample posts above to add the Job-scam shield, or write your own rule.`
+              ? html`Check the sample posts above to add the Hidden-pay check, or write your own rule.`
               : html`Compile a rule above${host.install ? ", or install one by its code" : ""}.`}
           </p>`}
     <ul class="list">
@@ -1037,7 +1037,7 @@ export function mountApp(root: HTMLElement, host: Host) {
   host
     .load()
     .then((list) => {
-      s.cantrips = list;
+      s.cantrips = list.map(withCurrentStarterName);
       s.loaded = true;
       draw();
       if (s.importCode) install();

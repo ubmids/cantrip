@@ -8,7 +8,7 @@ Say what to watch for. Gemini in the cloud writes and tests a program for Gemini
 
 ## Inspiration
 
-A job seeker reads dozens of posts a day. Some hide that there is no pay at all, or that you will be the one paying for a "starter kit". People in the US reported losing $501 million to job and employment agency scams in 2024, up from $90 million in 2020 (FTC). The signs are in the text, but nobody reads every post, email and review with a lawyer's eye. And a job search, an inbox or a pile of reviews is exactly the text you don't want to send to a server just to be warned about it.
+A job seeker reads dozens of posts a day. Some hide that a role has no guaranteed pay: it is commission-only, or unpaid. For context, people in the US reported losing $501 million to job and employment agency scams in 2024, up from $90 million in 2020 (FTC). That figure covers job scams of every kind (fake recruiters, fake checks, upfront fees), and hidden pay is only one warning sign among them, the one our ready-made check looks for. Signs like these are in the text, but nobody reads every post, email and review with a lawyer's eye. And a job search, an inbox or a pile of reviews is exactly the text you don't want to send to a server just to be warned about it.
 
 On-device models are free, private and work offline. But they are small and fragile about prompting. Most people will never write a good prompt for Gemini Nano, and a prompt that works on one device's model often breaks on another. Big cloud models are the opposite: smart, but every call costs money and sends your text away.
 
@@ -28,7 +28,7 @@ You type a rule in plain English, like "Warn me when a job post is really commis
 4. A third of the tests are held back from the repair loop, so the final "unseen tests" score is honest.
 5. From then on, the program runs on Gemini Nano in Chrome on every page you read. Posts, cards and emails get a badge with the deciding words highlighted. There's no cloud call and no cost, it works offline, and the page text never leaves your machine.
 
-The hosted app opens on a ready **Job-scam shield**: the commission-only program from a real compile on Gemini Nano, and five sample job posts. One click checks them, and you can paste any post of your own. If your browser has no Gemini Nano, Firebase AI Logic's hybrid mode runs those checks on Gemini in the cloud instead. The app says so before you press the button, allows 15 cloud checks per browser session, and marks every result "ran in the cloud: no on-device model here" or "ran on device".
+The hosted app opens on a ready **Hidden-pay check**: the commission-only program from a real compile on Gemini Nano, and five sample job posts. It flags posts that hide there is no guaranteed pay (commission-only or unpaid), and nothing else: it is not a general job-scam detector. One click checks them, and you can paste any post of your own. If your browser has no Gemini Nano, Firebase AI Logic's hybrid mode runs those checks on Gemini in the cloud instead. The app says so before you press the button, allows 15 cloud checks per browser session, and marks every result "ran in the cloud: no on-device model here" or "ran on device".
 
 Mark a verdict wrong and it becomes a new test, and Cantrip recompiles on your device. You can share a rule by a 7-character code. The repo also holds a SwiftUI iPhone app written to port a shared program to Apple's on-device Foundation Model. It builds for the iOS Simulator but has never run on a phone, so this submission is judged on the web app and the Chrome extension only.
 
@@ -94,7 +94,7 @@ Firebase AI Logic, Gemini, Gemini Nano, Firebase App Check, Firebase Authenticat
 ## How to test it
 
 - **Fastest:** the video shows the full loop on real hardware.
-- **One click, any computer:** open https://sixth-trainer-388221.web.app and press **Check these 5 posts**. The Job-scam shield checks five sample job posts. Without Gemini Nano the checks run on Gemini in the cloud through Firebase AI Logic's hybrid mode, and each result says so (15 per browser session). **Paste your own post** checks any text.
+- **One click, any computer:** open https://sixth-trainer-388221.web.app and press **Check these 5 posts**. The Hidden-pay check reads five sample job posts. Without Gemini Nano the checks run on Gemini in the cloud through Firebase AI Logic's hybrid mode, and each result says so (15 per browser session). **Paste your own post** checks any text.
 - **The full loop, with Gemini Nano:** desktop Chrome 148 or later (about 22 GB of free disk space, and 16 GB of memory or a GPU with more than 4 GB of VRAM). Press **Download the model** once, pick **Commission-only jobs** under "Your own rule", press **Compile**, then **Try it** on the examples. A compile takes about 1 to 3 minutes, and every check then runs on your device.
 - **See a compile without Gemini Nano:** https://sixth-trainer-388221.web.app/?preview is the compile interface with scripted answers. It says so on every screen, and no model runs in it.
 - **Code without any keys:** `npm install && npm test` runs the compiler loop, the page splitter and the page badges against fake models.
@@ -123,7 +123,7 @@ The contest FAQ says judges may score from the video alone, and asks for who it'
 
 **0:12 to 0:30, who it's for and how.**
 - Screen: hover a badge, then the side panel's "ran on this device" line.
-- Voice: "Job seekers read dozens of posts a day, and people in the US reported losing 501 million dollars to job scams in 2024. A small model on your device could check every post for free, but small models are fragile, and nobody writes good prompts for them. So Cantrip splits the work. Gemini in the cloud writes and debugs the prompt. Gemini Nano on my device runs it. Both through Firebase AI Logic."
+- Voice: "Job seekers read dozens of posts a day, and some hide that there's no guaranteed pay. A small model on your device could check every post for free, but small models are fragile, and nobody writes good prompts for them. So Cantrip splits the work. Gemini in the cloud writes and debugs the prompt. Gemini Nano on my device runs it. Both through Firebase AI Logic."
 
 **0:30 to 0:45, a new rule in one sentence.**
 - Switch to `demo/inbox.html`. Press the **Pressure-to-pay emails** chip and **Compile**.

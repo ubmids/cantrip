@@ -1,5 +1,7 @@
 /**
- * The Job-scam shield: a cantrip that works on the first click.
+ * The Hidden-pay check: a cantrip that works on the first click. It flags job
+ * posts that hide there is no guaranteed pay (commission-only or unpaid), and
+ * nothing else, so its name promises only that.
  *
  * Its program, tests and scores are the real ones from compiling the
  * commission-only sample on Gemini Nano on 14 November 2026 (see
@@ -9,26 +11,36 @@
 import type { Cantrip } from "../../core/types";
 import real from "./job-shield-14nov.json";
 
+/** Kept from when it was called the Job-scam shield, so libraries saved since then still find it. */
 export const STARTER_ID = "starter-job-scam-shield";
+
+export const STARTER_NAME = "Hidden-pay check";
+const STARTER_DESCRIPTION = "Flags job posts that hide there is no guaranteed pay: commission-only or unpaid.";
 
 export const STARTER_PROVENANCE =
   "Compiled and tested on Gemini Nano in Chrome 157 on 14 November 2026, on a MacBook with an M2 Pro: 9 of 9 tuning tests and 3 of 3 unseen tests, 1 cloud call, 12 runs on the device. It ships with the app, so it works on the first click.";
 
-export function jobScamShield(now: number = Date.now()): Cantrip {
+export function hiddenPayCheck(now: number = Date.now()): Cantrip {
   const c = structuredClone(real.cantrip) as unknown as Cantrip;
   return {
     ...c,
     id: STARTER_ID,
     spec: {
       ...c.spec,
-      name: "Job-scam shield",
-      description: "Flags job posts that hide there is no guaranteed pay: commission-only or unpaid.",
+      name: STARTER_NAME,
+      description: STARTER_DESCRIPTION,
     },
     provenance: STARTER_PROVENANCE,
     enabled: true,
     createdAt: now,
     updatedAt: now,
   };
+}
+
+/** A library saved before the rename still says "Job-scam shield": give the starter its current name. */
+export function withCurrentStarterName(c: Cantrip): Cantrip {
+  if (c.id !== STARTER_ID || c.spec.name === STARTER_NAME) return c;
+  return { ...c, spec: { ...c.spec, name: STARTER_NAME, description: STARTER_DESCRIPTION } };
 }
 
 export interface BoardPost {

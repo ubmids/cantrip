@@ -8,14 +8,14 @@ import type { DeviceState } from "../src/firebase/ai";
 import { mountApp } from "../src/ui/app";
 import type { Host } from "../src/ui/host";
 import { SAMPLES } from "../src/ui/samples";
-import { BOARD_POSTS, jobScamShield, STARTER_ID } from "../src/ui/starter";
+import { BOARD_POSTS, hiddenPayCheck, STARTER_ID, withCurrentStarterName } from "../src/ui/starter";
 import real from "../src/ui/starter/job-shield-14nov.json";
 
 afterEach(() => {
   document.body.innerHTML = "";
 });
 
-/** Labels like the Job-scam shield would, and records every call. */
+/** Labels like the Hidden-pay check would, and records every call. */
 class LabelModel implements JsonModel {
   calls = 0;
   constructor(private source: "on_device" | "in_cloud") {}
@@ -100,8 +100,8 @@ describe("cloud check budget", () => {
   });
 });
 
-describe("the Job-scam shield starter", () => {
-  const shield = jobScamShield(1);
+describe("the Hidden-pay check starter", () => {
+  const shield = hiddenPayCheck(1);
 
   it("is the program compiled on Gemini Nano on 14 November, unchanged", () => {
     const original = real.cantrip as unknown as Cantrip;
@@ -128,6 +128,16 @@ describe("the Job-scam shield starter", () => {
     expect(shield.spec.intent).toBe(SAMPLES[0].intent);
     expect(shield.id).toBe(STARTER_ID);
     expect(shield.shareCode).toBeUndefined();
+  });
+
+  it("is named for what it checks, and renames a copy saved under its old name", () => {
+    expect(shield.spec.name).toBe("Hidden-pay check");
+    expect(shield.spec.description).toMatch(/no guaranteed pay/);
+    const old = { ...shield, spec: { ...shield.spec, name: "Job-scam shield" } };
+    expect(withCurrentStarterName(old).spec.name).toBe("Hidden-pay check");
+    expect(withCurrentStarterName(old).programs).toEqual(shield.programs);
+    const other = { ...old, id: "someone-elses" };
+    expect(withCurrentStarterName(other)).toBe(other);
   });
 
   it("checks posts copied word for word from the demo job board", () => {
@@ -191,7 +201,7 @@ describe("hybrid runs in the web app", () => {
     const { root } = mount({ device: "unavailable", hybrid, budget: cloudBudget(5, memoryStore()) });
     await vi.waitFor(() => expect(button(root, /Paste your own post/)).toBeDefined());
     button(root, /Paste your own post/)!.click();
-    await vi.waitFor(() => expect(root.querySelector(".detail h2")?.textContent).toBe("Job-scam shield"));
+    await vi.waitFor(() => expect(root.querySelector(".detail h2")?.textContent).toBe("Hidden-pay check"));
 
     expect(root.querySelector(".provenance")?.textContent).toContain("Gemini Nano");
     // Three unseen tests read as 3/3, not as "100%".
