@@ -7,6 +7,7 @@ import { mountApp } from "../src/ui/app";
 afterEach(() => {
   vi.useRealTimers();
   document.body.innerHTML = "";
+  history.replaceState(null, "", "/");
 });
 
 describe("the simulated walkthrough", () => {
@@ -46,6 +47,9 @@ describe("the simulated walkthrough", () => {
     mountApp(root, { ...simulatedHost(), simulated: false, load: async () => list, save: async (l) => void (list = l) });
     await vi.advanceTimersByTimeAsync(50);
 
+    // Shown as the real web app, the composer is its own screen, reached from the front page.
+    expect(root.querySelector("#compose")).toBeNull();
+    (root.querySelector(".band a") as HTMLAnchorElement).click();
     (root.querySelector("#compose button.chip") as HTMLButtonElement).click();
     await vi.advanceTimersByTimeAsync(0);
     root.querySelector("#compose form")!.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));

@@ -54,10 +54,20 @@ type Route =
   | { ok: false; why: "checking" | "no-device" | "limit" };
 
 const REPO = "https://github.com/ubmids/cantrip";
+
+/**
+ * The web app's screens: the front page (check the ads), the composer, and the library. Each
+ * has a hash so the browser's Back button works. The simulated walkthrough and the extension
+ * keep everything on one screen.
+ */
+type View = "front" | "make" | "checks";
+const VIEW_HASH: Record<View, string> = { front: "", make: "#make", checks: "#checks" };
+const viewFromHash = (): View => (location.hash === "#make" ? "make" : location.hash === "#checks" ? "checks" : "front");
 /** The README's "Try it" table, where the demo video is linked. */
 const VIDEO = `${REPO}#try-it`;
 
 interface State {
+  view: View;
   loaded: boolean;
   board: BoardRun | null;
   cantrips: Cantrip[];
@@ -101,7 +111,11 @@ const slash = (c: Count | null) => (c ? `${c.passed}/${c.total}` : "–");
 const secs = (ms: number) => (ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`);
 
 export function mountApp(root: HTMLElement, host: Host) {
+  /** The front page, composer and library as separate screens: only in the real web app. */
+  const hero = () => host.kind === "web" && !host.simulated;
+
   const s: State = {
+    view: hero() ? viewFromHash() : "front",
     loaded: false,
     board: null,
     cantrips: [],
@@ -284,8 +298,28 @@ export function mountApp(root: HTMLElement, host: Host) {
   function closeCompile(openResult: boolean) {
     const id = s.compile?.result?.id;
     s.compile = null;
-    if (openResult && id) openCantrip(id);
+    if (openResult && id) {
+      // A new check lands in the library, so going back from it shows it there.
+      if (hero()) go("checks");
+      openCantrip(id);
+    }
     draw();
+  }
+
+  /** Show one of the web app's screens, and record it so the browser's Back button returns here. */
+  function go(view: View) {
+    s.view = view;
+    s.openId = null;
+    s.confirmDelete = false;
+    if (hero() && location.hash !== VIEW_HASH[view]) {
+      try {
+        history.pushState(null, "", VIEW_HASH[view] || `${location.pathname}${location.search}`);
+      } catch {
+        // Some embedded frames refuse history changes; the screen still changes.
+      }
+    }
+    draw();
+    window.scrollTo?.({ top: 0 });
   }
 
   // ---------------------------------------------------------------------------
@@ -495,7 +529,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     const walkthrough =
       host.kind === "web" && !host.simulated
         ? html`<p class="small">
-            No Gemini Nano here? The Hidden-pay check above still runs, in the cloud. To see a compile, open the
+            No Gemini Nano here? The Hidden-pay check on the front page still runs, in the cloud. To see a compile, open the
             <a href="?preview">simulated walkthrough</a> (scripted, no model runs in it) or the demo video linked in the
             <a href=${REPO} target="_blank" rel="noopener">README</a>.
           </p>`
@@ -517,9 +551,16 @@ export function mountApp(root: HTMLElement, host: Host) {
 
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const header = () => html`<header class="top">
-    <a class="mark" href="#" @click=${(e: Event) => (e.preventDefault(), closeCompile(false), openCantrip(null))}>Cantrip</a>
+    <a class="mark" href="#" @click=${(e: Event) => (e.preventDefault(), closeCompile(false), go("front"))}>Cantrip</a>
     <div class="dateline">
-      <span>${today}</span>
+      <span class="dateline-left">
+        <span>${today}</span>
+        ${hero()
+          ? html`<a class="checks-link" href="#checks" @click=${(e: Event) => (e.preventDefault(), closeCompile(false), go("checks"))}
+              >Your checks${s.loaded ? ` (${s.cantrips.length})` : ""}</a
+            >`
+          : nothing}
+      </span>
       <span class="tagline">Every ad, read for you</span>
       ${devicePill()}
     </div>
@@ -536,14 +577,14 @@ export function mountApp(root: HTMLElement, host: Host) {
       : nothing}
     ${host.setupProblem ? html`<div class="banner warn">${host.setupProblem}</div>` : nothing}`;
 
-  /** The board and the composer both start here when there is no hero (the simulated walkthrough keeps its old look). */
+  /** In the web app this is its own screen; the simulated walkthrough and the extension open on it. */
   const composer = () => html`<section class="composer card" id="compose">
     ${hero()
-      ? html`<p class="eyebrow">Your own rule</p>
-          <h2>Watching for a different trap? Say it in one sentence.</h2>
+      ? html`${backButton()}
+          <h1>Make your own check</h1>
           <p class="lede">
-            Gemini in the cloud writes a tiny program for the model on your device, tests it there, and fixes what fails.
-            Then it runs on every page for free, and what you read never leaves your machine.
+            Describe the trap in one sentence: Gemini in the cloud writes a small program for Gemini Nano on your device,
+            tests it there, and fixes what fails.
           </p>`
       : html`<h1>Teach your browser a rule.</h1>
           <p class="lede">
@@ -581,9 +622,6 @@ export function mountApp(root: HTMLElement, host: Host) {
     </form>
     ${deviceHelp()}
   </section>`;
-
-  /** The hero only shows in the real web app: the simulated walkthrough stays as it was. */
-  const hero = () => host.kind === "web" && !host.simulated;
 
   /** One line before a run that says where it will happen, so text never goes to the cloud unannounced. */
   const routeNote = (count: number) => {
@@ -654,6 +692,7 @@ export function mountApp(root: HTMLElement, host: Host) {
     </li>`;
   };
 
+  /** The front page: one job, checking the sample ads. */
   const board = () => {
     const b = s.board;
     const done = b ? b.results.filter((x) => x && "verdict" in x).length : 0;
@@ -663,50 +702,45 @@ export function mountApp(root: HTMLElement, host: Host) {
       <p class="eyebrow">Classifieds · For job seekers</p>
       <h1>Catch the job posts that hide there's no pay.</h1>
       <p class="lede">
-        Some posts bury the fact that a role is commission-only or unpaid. Cantrip reads each post and flags those, quoting
-        the words that give it away. With Gemini Nano in Chrome it runs on your own device, for free, so your job search
-        never leaves your machine.
+        Cantrip reads each job post and stamps the ones that hide there's no pay, quoting the words that give it away.
       </p>
-      <div class="card shield">
-        <div class="row between wrap">
-          <div>
-            <h2 class="shield-title">Hidden-pay check</h2>
-            <p class="muted small">Five sample posts from made-up companies. Try it on them, or on a post of your own.</p>
-          </div>
-          <div class="row wrap gap">
-            <button class="btn ghost small" @click=${openStarter}>Paste your own post</button>
-            <button class="btn primary" ?disabled=${!r.ok || b?.running || b?.failure?.retry === false} @click=${checkBoard}>
-              ${b?.running ? html`<i class="spinner tiny light"></i> Checking ${done + 1} of ${BOARD_POSTS.length}…` : b ? "Check again" : `Check these ${BOARD_POSTS.length} posts`}
-            </button>
-          </div>
+      <div class="shield">
+        <div class="cta">
+          <button class="btn primary" ?disabled=${!r.ok || b?.running || b?.failure?.retry === false} @click=${checkBoard}>
+            ${b?.running ? html`<i class="spinner tiny light"></i> Checking ${done + 1} of ${BOARD_POSTS.length}…` : b ? "Check again" : `Check these ${BOARD_POSTS.length} posts`}
+          </button>
+          <button class="textlink" @click=${openStarter}>or paste your own post</button>
         </div>
+        ${b?.failure
+          ? errorBox(b.failure, r.ok ? checkBoard : undefined)
+          : b?.stopped
+            ? html`<p class="where limit">${b.stopped}</p>`
+            : routeNote(BOARD_POSTS.length)}
         ${b && !b.running && done
           ? html`<p class="summary" role="status">
               <b class=${flagged ? "flag" : "device"}>${flagged} of ${done} flagged</b>
               ${done < BOARD_POSTS.length ? html`<span class="muted">· ${BOARD_POSTS.length - done} not checked</span>` : nothing}
             </p>`
           : nothing}
-        ${b?.failure
-          ? errorBox(b.failure, r.ok ? checkBoard : undefined)
-          : b?.stopped
-            ? html`<p class="where limit">${b.stopped}</p>`
-            : routeNote(BOARD_POSTS.length)}
+        <div class="board-head">
+          <h2 class="shield-title">Hidden-pay check</h2>
+          <span class="muted">Five sample posts from made-up companies</span>
+        </div>
         <ol class="board" aria-live="polite">
           ${BOARD_POSTS.map((_, i) => boardCard(i))}
         </ol>
       </div>
-      <div class="realboard">
-        <h3>On a real job board</h3>
-        <p>
-          The Cantrip Chrome extension does the same to the page you are reading. Press <b>Read this page</b> and it splits
-          the page into posts, checks each one with Gemini Nano on your device, and puts a badge like these on the ones
-          that hide their pay, with the deciding words highlighted. The page never leaves your machine, and the extension
-          never falls back to the cloud. It is not in the Chrome Web Store yet: the
-          <a href=${REPO} target="_blank" rel="noopener">README</a> shows how to load it.
-        </p>
-      </div>
     </section>`;
   };
+
+  /** The way to the composer, kept to one line so the front page stays about the ads. */
+  const band = () => html`<section class="band">
+    <p>Watching for a different trap?</p>
+    <a class="btn" href="#make" @click=${(e: Event) => (e.preventDefault(), go("make"))}>Make your own check <span aria-hidden="true">→</span></a>
+  </section>`;
+
+  /** Back to the front page from the composer or the library. */
+  const backButton = () => html`<button class="back" @click=${() => go("front")}>← Back to the ads</button>`;
 
   const dots = (results: TestResult[], total: number, tests: TestCase[]) => {
     const byId = new Map(tests.map((t) => [t.id, t]));
@@ -945,7 +979,9 @@ export function mountApp(root: HTMLElement, host: Host) {
     const compiled = c.programs[host.target];
     const userTests = c.tests.filter((t) => t.origin === "user").length;
     return html`<section class="card detail">
-      <button class="back" @click=${() => openCantrip(null)}>← All cantrips</button>
+      <button class="back" @click=${() => openCantrip(null)}>
+        ${!hero() ? "← All cantrips" : s.view === "checks" ? "← Your checks" : s.view === "make" ? "← Back" : "← Back to the ads"}
+      </button>
       <div class="row between">
         <h2>${c.spec.name}</h2>
         <label class="switch"><input type="checkbox" .checked=${c.enabled} @change=${(e: Event) => setEnabled(c, (e.target as HTMLInputElement).checked)} /><span>On</span></label>
@@ -976,14 +1012,14 @@ export function mountApp(root: HTMLElement, host: Host) {
   };
 
   const library = () => html`<section class="library">
-    <h2>Your cantrips</h2>
+    ${hero() ? html`${backButton()}<h2>Your checks</h2>` : html`<h2>Your cantrips</h2>`}
     ${!s.loaded
       ? html`<div class="skeleton" aria-busy="true" aria-label="Loading your cantrips"><span></span><span></span></div>`
       : s.cantrips.length
         ? nothing
         : html`<p class="empty">
             Nothing here yet. ${hero()
-              ? html`Check the sample posts above to add the Hidden-pay check, or write your own rule.`
+              ? html`Check the sample posts on the front page to add the Hidden-pay check, or make your own.`
               : html`Compile a rule above${host.install ? ", or install one by its code" : ""}.`}
           </p>`}
     <ul class="list">
@@ -1010,15 +1046,29 @@ export function mountApp(root: HTMLElement, host: Host) {
       : nothing}
   </section>`;
 
+  /** What shows when no compile or check is open. */
+  const screen = () => {
+    if (!hero()) return html`${composer()} ${pagePanel()} ${library()}`;
+    if (s.view === "make") return composer();
+    if (s.view === "checks") return library();
+    return html`${board()} ${band()}`;
+  };
+
   function draw() {
     const c = open();
     render(
       html`<div class="app ${host.kind}">
         ${header()} ${banners()}
         <main>
-          ${s.compile ? compileTheatre(s.compile) : c ? detail(c) : html`${hero() ? board() : nothing} ${composer()} ${pagePanel()} ${library()}`}
+          ${s.compile ? compileTheatre(s.compile) : c ? detail(c) : screen()}
         </main>
         <footer class="small muted">
+          ${hero()
+            ? html`<p class="also">
+                Also a Chrome extension that does this on any job board: see the
+                <a href=${REPO} target="_blank" rel="noopener">README</a>.
+              </p>`
+            : nothing}
           ${host.simulated
             ? "Simulated walkthrough: no model runs on this page."
             : host.hybrid
@@ -1032,6 +1082,13 @@ export function mountApp(root: HTMLElement, host: Host) {
   }
 
   // Boot
+  if (hero())
+    window.addEventListener("popstate", () => {
+      s.view = viewFromHash();
+      s.openId = null;
+      s.confirmDelete = false;
+      draw();
+    });
   draw();
   refreshDevice();
   host

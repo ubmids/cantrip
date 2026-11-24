@@ -13,6 +13,7 @@ import real from "../src/ui/starter/job-shield-14nov.json";
 
 afterEach(() => {
   document.body.innerHTML = "";
+  history.replaceState(null, "", "/");
 });
 
 /** Labels like the Hidden-pay check would, and records every call. */
@@ -150,12 +151,65 @@ describe("the Hidden-pay check starter", () => {
 });
 
 describe("hybrid runs in the web app", () => {
-  it("opens on the job seeker's problem", async () => {
+  it("opens on the job seeker's problem, with one thing to do", async () => {
     const { root } = mount({ device: "unsupported", hybrid: new LabelModel("in_cloud"), budget: cloudBudget(5, memoryStore()) });
     await vi.waitFor(() => expect(root.querySelector(".pill")?.textContent).toContain("cloud fallback"));
     expect(root.querySelector("h1")?.textContent).toMatch(/job posts/);
     expect(root.querySelector(".eyebrow")?.textContent).toMatch(/job seekers/i);
-    expect(root.textContent).toContain("On a real job board");
+    // One primary button on the front page, the five ads, and the composer kept off it.
+    expect([...root.querySelectorAll("main .btn.primary")].map((b) => flat(b))).toEqual(["Check these 5 posts"]);
+    expect(root.querySelectorAll(".board .post")).toHaveLength(BOARD_POSTS.length);
+    expect(root.querySelector("#intent")).toBeNull();
+    expect(root.querySelector(".library")).toBeNull();
+    expect(flat(root.querySelector(".band"))).toContain("Make your own check");
+    expect(flat(root.querySelector("footer .also"))).toContain("Chrome extension that does this on any job board");
+  });
+
+  it("keeps the composer and the library on their own screens, with Back to the front page", async () => {
+    const { root } = mount({ device: "unsupported", hybrid: new LabelModel("in_cloud"), budget: cloudBudget(5, memoryStore()) });
+    await vi.waitFor(() => expect(flat(root.querySelector(".checks-link"))).toBe("Your checks (0)"));
+
+    (root.querySelector(".band a") as HTMLAnchorElement).click();
+    expect(location.hash).toBe("#make");
+    expect(flat(root.querySelector("h1"))).toBe("Make your own check");
+    expect(root.querySelector("#intent")).not.toBeNull();
+    expect(root.querySelectorAll(".chip").length).toBe(SAMPLES.length);
+    expect(root.querySelector(".board")).toBeNull();
+    expect(flat(root.querySelector("#compose .notice"))).toContain("on the front page still runs, in the cloud");
+
+    button(root, /Back to the ads/)!.click();
+    expect(location.hash).toBe("");
+    expect(root.querySelector(".board")).not.toBeNull();
+    expect(root.querySelector("#intent")).toBeNull();
+
+    // The browser's Back button returns to the screen it left.
+    (root.querySelector(".checks-link") as HTMLAnchorElement).click();
+    expect(flat(root.querySelector(".library h2"))).toBe("Your checks");
+    history.replaceState(null, "", "#make");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(root.querySelector("#intent")).not.toBeNull();
+  });
+
+  it("opens on the composer when the address asks for it", async () => {
+    history.replaceState(null, "", "#make");
+    const { root } = mount({ device: "available", deviceModel: new LabelModel("on_device") });
+    expect(flat(root.querySelector("h1"))).toBe("Make your own check");
+  });
+
+  it("counts the checks in the library, and opens one from there", async () => {
+    const device = new LabelModel("on_device");
+    const { root } = mount({ device: "available", deviceModel: device });
+    await vi.waitFor(() => expect(flat(root.querySelector(".where"))).toContain("Nothing is sent anywhere"));
+    button(root, /Check these 5 posts/)!.click();
+    await vi.waitFor(() => expect(root.querySelector(".summary")).not.toBeNull());
+    expect(flat(root.querySelector(".checks-link"))).toBe("Your checks (1)");
+
+    (root.querySelector(".checks-link") as HTMLAnchorElement).click();
+    expect(flat(root.querySelector(".list"))).toContain("Hidden-pay check");
+    (root.querySelector(".list .item") as HTMLButtonElement).click();
+    expect(flat(root.querySelector(".detail h2"))).toBe("Hidden-pay check");
+    button(root, /Your checks/)!.click();
+    expect(root.querySelector(".list")).not.toBeNull();
   });
 
   it("without Gemini Nano, says the posts will go to the cloud, runs them there, labels each result, and stops at the cap", async () => {
@@ -199,8 +253,8 @@ describe("hybrid runs in the web app", () => {
   it("runs pasted text in the cloud only after saying so, and holds corrections back for Gemini Nano", async () => {
     const hybrid = new LabelModel("in_cloud");
     const { root } = mount({ device: "unavailable", hybrid, budget: cloudBudget(5, memoryStore()) });
-    await vi.waitFor(() => expect(button(root, /Paste your own post/)).toBeDefined());
-    button(root, /Paste your own post/)!.click();
+    await vi.waitFor(() => expect(button(root, /paste your own post/i)).toBeDefined());
+    button(root, /paste your own post/i)!.click();
     await vi.waitFor(() => expect(root.querySelector(".detail h2")?.textContent).toBe("Hidden-pay check"));
 
     expect(root.querySelector(".provenance")?.textContent).toContain("Gemini Nano");
